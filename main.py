@@ -1,8 +1,8 @@
-import numpy as np
+from molecular_dynamics import Simulation
 
 
 def main():
-	pass
+	Simulation()
 
 
 if __name__ == "__main__":
