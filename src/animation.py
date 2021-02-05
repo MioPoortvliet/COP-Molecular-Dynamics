@@ -9,15 +9,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 import matplotlib.animation as animation
+import matplotlib as mpl
 
 
 class Animation:
-    def __init__(self, positions, box_size, dimension):
+    def __init__(self, positions, box_size, dimension, frameskip=1):
+        """doccstring"""
+        # This call forces the plot in an interactive window
+        mpl.use('Qt5Agg')
+        self.frameskip = frameskip
+
         self.time_index=0
         self.positions = positions
         self.dimension = dimension
 
-        if type(box_size) is int:
+        if type(box_size) in (int, float):
             self.box_size = np.repeat(box_size, dimension)
         else:
             assert len(box_size) == dimension
@@ -56,11 +62,11 @@ class Animation:
 
 
     def update2d(self, i):
-        self.time_index += 1
+        self.time_index += self.frameskip
         self.scat._offsets = (self.positions[self.time_index,::,0], self.positions[self.time_index,::,1])
 
 
     def update3d(self, i):
-        self.time_index += 1
+        self.time_index += self.frameskip
         self.scat._offsets3d = (self.positions[self.time_index,::,0], self.positions[self.time_index,::,1], self.positions[self.time_index,::,2])
         

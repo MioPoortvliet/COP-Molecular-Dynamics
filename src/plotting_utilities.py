@@ -1,9 +1,14 @@
 import matplotlib.pyplot as plt
 
-def plot_positions(arr, end_time):
-	plt.plot(arr[::,::,0], '.')
+def plot_positions(pos, vel, end_time) -> None:
+	plt.plot(pos[::,::,0], '.')
 	plt.xlabel("Time index")
 	plt.ylabel("Position")
+	plt.show()
+
+	plt.hist(vel[-1,::,0])
+	plt.xlabel("Velocity")
+	plt.ylabel("Counts")
 	plt.show()
 
 	"""

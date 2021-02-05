@@ -3,11 +3,11 @@ import numpy as np
 
 class Simulation():
 
-	def __init__(self, particles, dimension, box_size, time_step, end_time, vel_max=1, particle_mass = 6.6335e-26, epsilon_over_kb=119.8, sigma=3.405) -> None:
+	def __init__(self, particles, dimension, box_size, time_step, end_time, vel_max=0, particle_mass=6.6335e-26, epsilon_over_kb=119.8, sigma=3.405e-10) -> None:
 		"""todo"""
 
 		# Store constants
-		if type(box_size) is int:
+		if type(box_size) in (int, float):
 			self.box_size = np.repeat(box_size, dimension)
 		else:
 			assert len(box_size) == dimension
@@ -24,8 +24,9 @@ class Simulation():
 
 		# Initialize arrays
 		self.positions = np.random.rand(np.ceil(self.end_time/self.time_step).astype(int), self.particles, self.dimension) * self.box_size
-		self.velocities = np.random.rand(np.ceil(self.end_time/self.time_step).astype(int), self.particles, self.dimension) * self.vel_max
+		self.velocities = (np.random.rand(np.ceil(self.end_time/self.time_step).astype(int), self.particles, self.dimension) - 0.5) * 2 * self.vel_max
 
+		self.kb = 1.38e-23
 
 
 	def run_sim(self) -> None:
@@ -48,12 +49,17 @@ class Simulation():
 		self.positions[time_index+1] = self.positions[time_index] + self.velocities[time_index] * self.time_step
 		self.velocities[time_index+1] = self.velocities[time_index] + 1/self.particle_mass * self.force(distance_vectors) * self.time_step
 
-
 	def force(self, distance_vectors) -> np.ndarray:
 		"""put in distances for every particle, four nearest neighbours with x, y, z components. shape = (particles-1, particles, dimensions)"""
 		distances = self.sum_squared(distance_vectors)
 
-		return np.sum(4 * self.epsilon_over_kb * ( 12 * self.sigma ** 12 / distances ** 13 -  6 * self.sigma ** 6 / distances ** 7) * distance_vectors/distances, axis=0)
+		force = np.zeros(shape=distance_vectors.shape[1::])
+		for dimension in range(self.dimension):
+			force[::,dimension] = np.sum(4 * self.epsilon_over_kb * self.kb * ( 12 * self.sigma ** 12 / distances ** 13 -  6 * self.sigma ** 6 / distances ** 7) * distance_vectors[::,::,dimension]/distances, axis=0)
+
+		print(np.mean(force)/self.particle_mass)
+
+		return force
 
 
 	def distance_vectors(self, positions_at_time) -> np.ndarray:
@@ -62,8 +68,12 @@ class Simulation():
 		for i, position in enumerate(positions_at_time):
 			distance_vectors[::,i,::] = np.delete(positions_at_time, i, axis=0) - position
 
+			# need to take tiling into account
+			distance_vectors[::,i,::][np.any(distance_vectors[::,i,::] > self.box_size/2, axis=1)] -= self.box_size
+			distance_vectors[::,i,::][np.any(-distance_vectors[::,i,::] < -self.box_size/2, axis=1)] += self.box_size
+
 		return distance_vectors
 
 
 	def sum_squared(self, arr) -> np.ndarray:
-		return np.sum(arr**2)
+		return np.sum(arr**2, axis=-1)

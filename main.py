@@ -4,16 +4,16 @@ from src.animation import Animation
 
 import numpy as np
 
-def main():
+def main() -> None:
 	dimensions = 3
-	particles = 50
-	box_size = 1
+	particles = 100
+	box_size = 1e-4
 
-	sim = Simulation(particles, dimensions, box_size=box_size, time_step=0.000001, end_time=0.0001)
+	sim = Simulation(particles, dimensions, box_size=box_size, time_step=1e-5, end_time=5e-3)
 	sim.run_sim()
-	plot_positions(sim.positions, sim.end_time)
-	print(np.mean(sim.positions[-1,::,::]), np.std(sim.positions[-1,::,::]))
-	ani = Animation(sim.positions, box_size=box_size, dimension=dimensions)
+	plot_positions(sim.positions, sim.velocities, sim.end_time)
+	print(np.mean(sim.velocities[-1,::,::]), np.std(sim.velocities[-1,::,::]), 1e-4/1e-5)
+	ani = Animation(sim.positions, box_size=box_size, dimension=dimensions, frameskip=10)
 	ani.run()
 
 
