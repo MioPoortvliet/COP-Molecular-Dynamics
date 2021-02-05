@@ -26,11 +26,18 @@ class Simulation():
 
 
 
-	def run_sim(self):
+	def run_sim(self) -> None:
 		""""""
 		# We don't want to calculate the last time index plus one! So end it one early.
 		for time_index in np.arange(np.ceil(self.end_time/self.time_step-1).astype(int), dtype=int):
 			self.update(time_index)
+			self.positions[time_index+1] = self.apply_periodic_boundaries(self.positions[time_index+1])
+
+
+	def apply_periodic_boundaries(self, positions) -> np.ndarray:
+		"""Simply apply modulus. Is it faster to check first? Probably not."""
+
+		return np.mod(positions, self.box_size)
 
 
 	def update(self, time_index) -> None:
@@ -56,5 +63,5 @@ class Simulation():
 		return distance_vectors
 
 
-	def sum_squared(self, arr):
+	def sum_squared(self, arr) -> np.ndarray:
 		return np.sum(arr**2)
