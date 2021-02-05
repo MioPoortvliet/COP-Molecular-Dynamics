@@ -7,12 +7,14 @@ class Simulation():
 		"""todo"""
 
 		# Store constants
-		self.particles = particles
-		self.dimension = dimension
-		if len(box_size) is not dimension:
+		if type(box_size) is int:
 			self.box_size = np.repeat(box_size, dimension)
 		else:
+			assert len(box_size) == dimension
 			self.box_size = box_size
+
+		self.particles = particles
+		self.dimension = dimension
 		self.time_step = time_step
 		self.end_time = end_time
 		self.vel_max = vel_max
