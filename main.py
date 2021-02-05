@@ -5,11 +5,15 @@ from src.animation import Animation
 import numpy as np
 
 def main():
-	sim = Simulation(particles=15, dimension=2, box_size=15, time_step=0.0001, end_time=0.01)
+	dimensions = 3
+	particles = 15
+
+	sim = Simulation(particles, dimensions, box_size=30, time_step=0.0001, end_time=0.01)
 	sim.run_sim()
 	plot_positions(sim.positions, sim.end_time)
-	print(np.mean(sim.velocities[-1,::,::]), np.std(sim.velocities[-1,::,::]))
-	ani = Animation(sim.positions, 15, 3)
+	print(np.mean(sim.positions[-1,::,::]), np.std(sim.positions[-1,::,::]))
+	ani = Animation(sim.positions, particles, dimensions)
+	ani.run()
 
 
 if __name__ == "__main__":
