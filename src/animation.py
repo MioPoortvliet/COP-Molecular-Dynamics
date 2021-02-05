@@ -8,15 +8,18 @@ Created on Fri Feb  5 11:56:24 2021
 import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
-class animation:
+
+
+class Animation:
     def __init__(self, positions, box_size, dimension):
         self.time_index=0
         self.positions = positions
         self.dimension = dimension
-        
-        if len(box_size) is not dimension:
+
+        if type(box_size) is int:
             self.box_size = np.repeat(box_size, dimension)
         else:
+            assert len(box_size) == dimension
             self.box_size = box_size
         
         self.fig = plt.figure()
