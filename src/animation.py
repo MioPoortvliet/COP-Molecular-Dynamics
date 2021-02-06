@@ -32,9 +32,9 @@ class Animation:
         self.fig = plt.figure()
 
         if self.dimension == 2:
-            self.ax = self.fig.add_subplot(1, 1, 1)
+            self.ax = self.fig.add_subplot(111)
             self.ax.set_aspect('equal')
-            self.scat = self.ax.scatter(self.positions[0,::,0],self.positions[0,::,1])
+            self.scat = self.ax.scatter(self.positions[0,::,0], self.positions[0,::,1])
             self.ax.set_xlim([0, self.box_size[0]])
             self.ax.set_ylim([0, self.box_size[1]])
             self.ax.set_xlabel('X')
@@ -63,7 +63,7 @@ class Animation:
 
     def update2d(self, i):
         self.time_index += self.frameskip
-        self.scat._offsets = (self.positions[self.time_index,::,0], self.positions[self.time_index,::,1])
+        self.scat._offsets = self.positions[self.time_index,::,::]
 
 
     def update3d(self, i):
