@@ -35,8 +35,8 @@ class Simulation():
 		print(self.end_time, self.time_step)
 		self.positions = np.zeros(shape=(np.ceil(self.end_time/self.time_step).astype(int), self.particles, self.dimension))
 		print(self.positions[0,::,::])
-		self.positions[0,::,::] = np.array([[1.5, 1.5], [3, 3], [4.3, 3], [5.6, 3], [1, 3]])[:self.particles,::]
-		#self.positions[0,::,::] = np.random.rand(self.particles, self.dimension) * self.box_size
+		#self.positions[0,::,::] = np.array([[1.5, 1.5], [3, 3], [4.3, 3], [5.6, 3], [1, 3]])[:self.particles,::]
+		self.positions[0,::,::] = np.random.rand(self.particles, self.dimension) * self.box_size
 		self.velocities = np.zeros(shape=(np.ceil(self.end_time/self.time_step).astype(int), self.particles, self.dimension))
 		self.potential_energy = np.zeros(shape=(np.ceil(self.end_time/self.time_step).astype(int), self.particles))
 
