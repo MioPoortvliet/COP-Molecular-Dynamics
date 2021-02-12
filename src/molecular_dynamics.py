@@ -3,35 +3,42 @@ import numpy as np
 
 class Simulation():
 
-	def __init__(self, particles, dimension, box_size, time_step, end_time, vel_max=None, particle_mass=1, epsilon_over_kb=1, sigma=1) -> None:
-		"""todo particle mass: 6.6335e-26 kg epsilon_over_kb=119.8, sigma=3.405e-10"""
+	def __init__(self, particles, dimension, box_size, end_time, time_step=1e-3, vel_max=None, particle_mass=6.6335e-26, epsilon_over_kb=119.8, sigma=3.405e-10) -> None:
+		"""todo particle mass: 6.6335e-26 kg epsilon_over_kb=119.8 K, sigma=3.405e-10 m"""
 
+		self.kb = 1.38e-23
 		# Store constants
 		if type(box_size) in (int, float):
-			self.box_size = np.repeat(box_size, dimension)
+			self.box_size = np.repeat(box_size/sigma, dimension)
 		else:
 			assert len(box_size) == dimension
-			self.box_size = box_size
+			self.box_size = box_size / sigma
 
 		self.particles = int(particles)
 		self.dimension = int(dimension)
-		self.time_step = time_step
-		self.end_time = end_time
+		self.end_time = end_time / np.sqrt(particle_mass * sigma**2 / (epsilon_over_kb * self.kb))
+		self.time_step = time_step # is already dimensioinless, it is the h
+
+		# make a comment
 		if vel_max is not None:
-			self.vel_max = vel_max
+			self.vel_max = vel_max / np.sqrt(epsilon_over_kb * self.kb / particle_mass)
 		else:
 			self.vel_max = np.min(self.box_size)/self.time_step/0.001
+
 		self.particle_mass = particle_mass
 		self.epsilon_over_kb = epsilon_over_kb
 		self.sigma = sigma
 
-		self.force_treshold = self.particle_mass * np.mean(self.box_size) / self.time_step
+		#self.force_treshold = self.particle_mass * np.mean(self.box_size) / self.time_step
 
 		# Initialize arrays
-		self.positions = np.random.rand(np.ceil(self.end_time/self.time_step).astype(int), self.particles, self.dimension) * self.box_size
-		self.velocities = (np.random.rand(np.ceil(self.end_time/self.time_step).astype(int), self.particles, self.dimension) - 0.5) * 2 * self.vel_max
-
-		self.kb = 1#.38e-23
+		print(self.end_time, self.time_step)
+		self.positions = np.zeros(shape=(np.ceil(self.end_time/self.time_step).astype(int), self.particles, self.dimension))
+		print(self.positions[0,::,::])
+		self.positions[0,::,::] = np.array([[1.5, 1.5], [3, 3], [4.3, 3], [5.6, 3], [1, 3]])[:self.particles,::]
+		#self.positions[0,::,::] = np.random.rand(self.particles, self.dimension) * self.box_size
+		self.velocities = np.zeros(shape=(np.ceil(self.end_time/self.time_step).astype(int), self.particles, self.dimension))
+		self.potential_energy = np.zeros(shape=(np.ceil(self.end_time/self.time_step).astype(int), self.particles))
 
 
 	def run_sim(self) -> None:
@@ -49,10 +56,18 @@ class Simulation():
 
 
 	def update(self, time_index) -> None:
+		# Calc new velocities
 		distance_vectors = self.distance_vectors(self.positions[time_index])
+		self.velocities[time_index+1] = self.velocities[time_index] + self.force(distance_vectors) * self.time_step
 
-		self.positions[time_index+1] = self.positions[time_index] + self.velocities[time_index] * self.time_step
-		self.velocities[time_index+1] = self.velocities[time_index] + 1/self.particle_mass * self.force(distance_vectors) * self.time_step
+		# Calc new positions
+		self.positions[time_index+1] = self.positions[time_index] + self.velocities[time_index+1] * self.time_step
+
+		# Calculate potential energy
+		distances = self.sum_squared(self.distance_vectors(self.positions[time_index]))
+		self.potential_energy[time_index] = np.sum( 4 * ( ( distances**(-12) ) - (distances**(-6)) ), axis=0) / 2
+
+
 
 		#print(self.velocities[np.abs(self.velocities) > 1e8])
 
@@ -61,13 +76,9 @@ class Simulation():
 		distances = self.sum_squared(distance_vectors)
 
 		force = np.zeros(shape=distance_vectors.shape[1::])
+		#print(distance_vectors[0,0,::]/distances[0,0])
 		for dimension in range(self.dimension):
-			force[::,dimension] = np.sum(-4 * self.epsilon_over_kb * self.kb * ( 12 * self.sigma ** 12 / distances ** 13 -  6 * self.sigma ** 6 / distances ** 7) * distance_vectors[::,::,dimension]/distances, axis=0)
-
-		#print(np.max(force, axis=0)/self.particle_mass)
-		#force[np.abs(force) > self.force_treshold] = self.force_treshold * np.sign(force[np.abs(force) > self.force_treshold])
-
-		#print(np.mean(force, axis=0)/self.particle_mass, np.std(force, axis=0)/self.particle_mass)
+			force[::,dimension] = np.sum(4 * ( 12 / distances ** 13 - 6 / distances ** 7) * distance_vectors[::,::,dimension]/distances, axis=0)
 
 		return force
 
@@ -76,7 +87,7 @@ class Simulation():
 		distance_vectors = np.zeros(shape=(positions_at_time.shape[0]-1, positions_at_time.shape[0], self.dimension))
 		#print(positions_at_time)
 		for i, position in enumerate(positions_at_time):
-			distance_vectors[::,i,::] = np.delete(positions_at_time, i, axis=0) - position
+			distance_vectors[::,i,::] = position - np.delete(positions_at_time, i, axis=0)
 			# need to take tiling into account
 			for dim in range(self.dimension):
 				distance_vectors[::,i,dim][distance_vectors[::,i,dim] > self.box_size[dim]/2] -= self.box_size[dim]
@@ -86,14 +97,14 @@ class Simulation():
 
 
 	def sum_squared(self, arr) -> np.ndarray:
-		return np.sum(arr**2, axis=-1)
+		return np.sqrt(np.sum(arr**2, axis=-1))
 
 
 
 if __name__ == "__main__":
 	import matplotlib.pyplot as plt
 
-	sim = Simulation(1e2, 1, box_size=1e-6, time_step=1e-6, end_time=5e-3)
+	sim = Simulation(2, 2, box_size=1e-9, time_step=1e-3, end_time=1e-11, vel_max=1)
 	points=int(1e5)
 	x = np.linspace(-1e1, 1e1, points).reshape((1, points, 1))
 	print(sim.box_size/sim.time_step)

@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 def plot_positions(pos, vel, end_time) -> None:
 	plt.plot(pos[::,::,0], '.')
@@ -17,3 +18,12 @@ def plot_positions(pos, vel, end_time) -> None:
 	plt.ylabel("Position")
 	plt.show()
 	"""
+
+
+def plot_energies(kinetic_energy, potential_energy):
+	plt.plot(np.sum(kinetic_energy, axis=-1), '.', label="ke")
+	plt.plot(np.sum(potential_energy, axis=-1), '.', label="pe")
+	plt.plot(np.sum(potential_energy, axis=-1)+np.sum(kinetic_energy, axis=-1), '.', label="total")
+	plt.legend()
+	plt.xlim(200, 250)
+	plt.show()
