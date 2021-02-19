@@ -1,6 +1,7 @@
 import numpy as np
 from src.IO_utils import *
 from datetime import datetime
+import json
 
 class Simulation():
 
@@ -43,6 +44,29 @@ class Simulation():
 		self.potential_energy = np.zeros(shape=(self.steps_between_writing, self.particles))
 
 		self.make_file_structure(fpath)
+		self.write_header_file()
+
+
+	def write_header_file(self):
+		header = {}
+		header["particles"] = int(self.particles)
+		header["dimension"] = int(self.dimension)
+		header["end_time_diensionless"] = float(self.end_time)
+		header["time_step"] = float(self.time_step)
+		header["steps_between_writing"] = int(self.steps_between_writing)
+		header["total_steps"] = int(self.max_timesteps)
+		header["vel_max"] = float(self.vel_max)
+		header["particle_mass"] = float(self.particle_mass)
+		header["epsilon_over_kb"] = float(self.epsilon_over_kb)
+		header["sigma"] = float(self.sigma)
+		header["kb"] = float(self.kb)
+
+		print(header)
+
+		with open(self.fpath+"00-header.json", "w") as file:
+			json.dump(header, file)
+
+
 
 	def make_file_structure(self, fpath):
 		self.fpath = fpath + datetime.today().replace(microsecond=0).isoformat().replace(":", "-") + "/"
@@ -52,7 +76,6 @@ class Simulation():
 		self.fpath_positions = self.fpath+"/positions-"
 		self.fpath_velocities = self.fpath+"/velocities-"
 		self.fpath_potential_energy = self.fpath+"/potential_energy-"
-
 
 
 	def run_sim(self) -> None:
