@@ -23,7 +23,7 @@ def main() -> None:
 
     plot_positions(positions, velocities, sim.end_time)
     plot_energies(.5*np.sum(velocities**2, axis=-1), potential_energy)
-    ani = Animation(sim.positions,.5*np.sum(sim.velocities**2, axis=-1), sim.potential_energy, box_size=sim.box_size, dimension=dimensions, frameskip=10)
+    ani = Animation(positions,.5*np.sum(velocities**2, axis=-1), potential_energy, box_size=sim.box_size, dimension=dimensions, frameskip=10)
     ani.run()
 
 

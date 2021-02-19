@@ -137,10 +137,15 @@ class Simulation():
 		#print(positions_at_time)
 		for i, position in enumerate(positions_at_time):
 			distance_vectors[::,i,::] = position - np.delete(positions_at_time, i, axis=0)
+
+			
 			# need to take tiling into account
 			for dim in range(self.dimension):
 				distance_vectors[::,i,dim][distance_vectors[::,i,dim] > self.box_size[dim]/2] -= self.box_size[dim]
 				distance_vectors[::,i,dim][distance_vectors[::,i,dim] < -self.box_size[dim]/2] += self.box_size[dim]
+
+
+		#( distance_vectors + self.box_size/2 ) % self.box_size - self.box_size / 2
 
 		return distance_vectors
 
