@@ -12,7 +12,7 @@ def main() -> None:
     
     timestep = 1e-2
     
-    sim = Simulation(particles, dimensions, box_size=box_size, time_step=timestep, end_time=1e-11, vel_max=0)
+    sim = Simulation(particles, dimensions, box_size=box_size, time_step=timestep, end_time=3e-11, vel_max=0)
     sim.run_sim()
 
     positions = load_and_concat(sim.fpath, "positions")
@@ -23,9 +23,9 @@ def main() -> None:
 
     plot_positions(positions, velocities, sim.end_time)
     plot_energies(.5*np.sum(velocities**2, axis=-1), potential_energy)
-    #print(np.mean(sim.velocities[-1,::,::]), np.std(sim.velocities[-1,::,::]), 1e-4/1e-5)
-    #ani = Animation(positions, box_size=sim.box_size, dimension=dimensions, frameskip=100)
-    #ani.run()
+    ani = Animation(sim.positions,.5*np.sum(sim.velocities**2, axis=-1), sim.potential_energy, box_size=sim.box_size, dimension=dimensions, frameskip=10)
+    ani.run()
+
 
 
 if __name__ == "__main__":
