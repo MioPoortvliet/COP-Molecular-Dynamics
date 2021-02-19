@@ -7,8 +7,8 @@ import numpy as np
 
 def main() -> None:
     dimensions = 2
-    particles = 5
-    box_size = 3e-9
+    particles = 10**dimensions
+    box_size = 10e-9 * particles**(1/dimensions)
     
     timestep = 1e-2
     
@@ -18,8 +18,6 @@ def main() -> None:
     positions = load_and_concat(sim.fpath, "positions")
     velocities = load_and_concat(sim.fpath, "velocities")
     potential_energy = load_and_concat(sim.fpath, "potential_energy")
-
-    print(positions.shape)
 
     plot_positions(positions, velocities, sim.end_time)
     plot_energies(.5*np.sum(velocities**2, axis=-1), potential_energy)
