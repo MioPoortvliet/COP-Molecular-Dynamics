@@ -11,6 +11,7 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import matplotlib.animation as animation
 import matplotlib as mpl
 import matplotlib.gridspec as gridspec
+from matplotlib import colors
 
 
 class Animation:
@@ -40,12 +41,18 @@ class Animation:
         if self.dimension == 2:
             self.ax = self.fig.add_subplot(self.gs[:,:-2])
             self.ax.set_aspect('equal')
-            self.scat = self.ax.scatter(self.positions[0,::,0], self.positions[0,::,1])
+            
+            self.scats = [self.ax.scatter(self.positions[0,j,0],self.positions[0,j,1], s=2) for j,pos in enumerate(self.positions[0,::,0])]
+            # self.scat = self.ax.scatter(self.positions[0,::,0], self.positions[0,::,1])
+            
             self.time_text = self.ax.text(.02, .02, '', transform=self.ax.transAxes, color="black")
         elif self.dimension == 3:
             self.ax = self.fig.add_subplot(self.gs[:,:-2], projection='3d')
             self.ax.auto_scale_xyz([0, self.box_size[0]],[0, self.box_size[1]],[0, 5*self.box_size[2]])
-            self.scat = self.ax.scatter(self.positions[0,::,0],self.positions[0,::,1],self.positions[0,::,2])
+            
+            self.scats = [self.ax.scatter(self.positions[0,j,0],self.positions[0,j,1],self.positions[0,j,2], s=2) for j,pos in enumerate(self.positions[0,::,0])]
+            # self.scat = self.ax.scatter(self.positions[0,::,0],self.positions[0,::,1],self.positions[0,::,2])
+            
             self.time_text = self.ax.text2D(.02, .02, '', transform=self.ax.transAxes, color="black")
             self.ax.set_zlim3d([0, self.box_size[2]])
             self.ax.set_zlabel('Z')
@@ -56,6 +63,7 @@ class Animation:
         self.ax.set_ylabel('Y')
         self.ax.set_title('Molecular dynamics')
         
+        self.tail_length = 10
         
         self.ax_energy = self.fig.add_subplot(self.gs[0,-2:])
         self.ax_energy.set_title('Energy')
@@ -81,14 +89,28 @@ class Animation:
 
     def update2d(self, i):
         self.time_index += self.frameskip
-        self.scat._offsets = self.positions[self.time_index,::,::]
+        for j, self.scat in enumerate(self.scats):
+            if self.time_index<self.tail_length*self.frameskip:
+                self.scat._offsets = (self.positions[:self.time_index,j,0:2])
+                self.scat.set_sizes(np.linspace(0,4,num=self.time_index, dtype=float))
+            else:
+                self.scat._offsets = (self.positions[self.time_index-self.tail_length*self.frameskip:self.time_index,j,0:2])
+                self.scat.set_sizes(np.linspace(0,4,num=self.tail_length*self.frameskip, dtype=float))
+        # self.scat._offsets = self.positions[self.time_index,::,::]
         self.update_energy(self.time_index)
         self.time_text.set_text('frame = %.1f' % self.time_index)
 
-
+    
     def update3d(self, i):
         self.time_index += self.frameskip
-        self.scat._offsets3d = (self.positions[self.time_index,::,0], self.positions[self.time_index,::,1], self.positions[self.time_index,::,2])
+        for j, self.scat in enumerate(self.scats):
+            if self.time_index<self.tail_length*self.frameskip:
+                self.scat._offsets3d = (self.positions[:self.time_index,j,0], self.positions[:self.time_index,j,1], self.positions[:self.time_index,j,2])
+                self.scat.set_sizes(np.linspace(0,4,num=self.time_index, dtype=float))
+            else:
+                self.scat._offsets3d = (self.positions[self.time_index-self.tail_length*self.frameskip:self.time_index,j,0], self.positions[self.time_index-self.tail_length*self.frameskip:self.time_index,j,1], self.positions[self.time_index-self.tail_length*self.frameskip:self.time_index,j,2])
+                self.scat.set_sizes(np.linspace(0,4,num=self.tail_length*self.frameskip, dtype=float))
+        # self.scat._offsets3d = (self.positions[self.time_index,::,0], self.positions[self.time_index,::,1], self.positions[self.time_index,::,2])
         self.update_energy(self.time_index)
         self.time_text.set_text('frame = %.1f' % self.time_index)
 
