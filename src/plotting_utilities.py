@@ -25,5 +25,4 @@ def plot_energies(kinetic_energy, potential_energy):
 	plt.plot(np.sum(potential_energy, axis=-1), '.', label="pe")
 	plt.plot(np.sum(potential_energy, axis=-1)+np.sum(kinetic_energy, axis=-1), '.', label="total")
 	plt.legend()
-	plt.xlim(200, 250)
 	plt.show()
