@@ -1,9 +1,11 @@
 import numpy as np
-
+from src.IO_utils import *
+from datetime import datetime
+import json
 
 class Simulation():
 
-	def __init__(self, particles, dimension, box_size, end_time, time_step=1e-3, vel_max=None, particle_mass=6.6335e-26, epsilon_over_kb=119.8, sigma=3.405e-10) -> None:
+	def __init__(self, particles, dimension, box_size, end_time, time_step=1e-3, vel_max=None, particle_mass=6.6335e-26, epsilon_over_kb=119.8, sigma=3.405e-10, steps_between_writing=1000, fpath="data/") -> None:
 		"""todo particle mass: 6.6335e-26 kg epsilon_over_kb=119.8 K, sigma=3.405e-10 m"""
 
 		self.kb = 1.38e-23
@@ -18,6 +20,9 @@ class Simulation():
 		self.dimension = int(dimension)
 		self.end_time = end_time / np.sqrt(particle_mass * sigma**2 / (epsilon_over_kb * self.kb))
 		self.time_step = time_step # is already dimensioinless, it is the h
+		self.steps_between_writing = steps_between_writing
+
+		self.max_timesteps = np.ceil(self.end_time/self.time_step-1).astype(int)
 
 		# make a comment
 		if vel_max is not None:
@@ -32,21 +37,72 @@ class Simulation():
 		#self.force_treshold = self.particle_mass * np.mean(self.box_size) / self.time_step
 
 		# Initialize arrays
-		print(self.end_time, self.time_step)
-		self.positions = np.zeros(shape=(np.ceil(self.end_time/self.time_step).astype(int), self.particles, self.dimension))
-		print(self.positions[0,::,::])
+		self.positions = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
 		#self.positions[0,::,::] = np.array([[1.5, 1.5], [3, 3], [4.3, 3], [5.6, 3], [1, 3]])[:self.particles,::]
 		self.positions[0,::,::] = np.random.rand(self.particles, self.dimension) * self.box_size
-		self.velocities = np.zeros(shape=(np.ceil(self.end_time/self.time_step).astype(int), self.particles, self.dimension))
-		self.potential_energy = np.zeros(shape=(np.ceil(self.end_time/self.time_step).astype(int), self.particles))
+		#x = np.linspace(0, self.box_size[0], int(self.particles**(1/self.dimension)))
+		#for i, y in enumerate(x):
+		#	for j, z in enumerate(x):
+		#		self.positions[0, i*x.size+j, ::] = (y,z)
+
+		self.velocities = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
+		self.potential_energy = np.zeros(shape=(self.steps_between_writing, self.particles))
+
+		self.make_file_structure(fpath)
+		self.write_header_file()
+
+
+	def write_header_file(self):
+		header = {}
+		header["particles"] = int(self.particles)
+		header["dimension"] = int(self.dimension)
+		header["end_time_diensionless"] = float(self.end_time)
+		header["time_step"] = float(self.time_step)
+		header["steps_between_writing"] = int(self.steps_between_writing)
+		header["total_steps"] = int(self.max_timesteps)
+		header["vel_max"] = float(self.vel_max)
+		header["particle_mass"] = float(self.particle_mass)
+		header["epsilon_over_kb"] = float(self.epsilon_over_kb)
+		header["sigma"] = float(self.sigma)
+		header["kb"] = float(self.kb)
+
+		print(header)
+
+		with open(self.fpath+"00-header.json", "w") as file:
+			json.dump(header, file)
+
+
+
+	def make_file_structure(self, fpath):
+		self.fpath = fpath + datetime.today().replace(microsecond=0).isoformat().replace(":", "-") + "/"
+
+		ensure_dir(self.fpath)
+
+		self.fpath_positions = self.fpath+"positions-"
+		self.fpath_velocities = self.fpath+"velocities-"
+		self.fpath_potential_energy = self.fpath+"potential_energy-"
 
 
 	def run_sim(self) -> None:
 		""""""
 		# We don't want to calculate the last time index plus one! So end it one early.
-		for time_index in np.arange(np.ceil(self.end_time/self.time_step-1).astype(int), dtype=int):
-			self.update(time_index)
-			self.positions[time_index+1] = self.apply_periodic_boundaries(self.positions[time_index+1])
+
+		self.forces = np.zeros(shape=(2, self.particles, self.dimension))
+		self.update_euler(0)
+		for cycle in np.arange(np.ceil(self.max_timesteps / self.steps_between_writing), dtype=np.int):
+			for time_index in np.arange(1, min(self.max_timesteps-cycle*self.steps_between_writing, self.steps_between_writing-1), dtype=int):
+				self.update_verlet(time_index)
+				self.positions[time_index+1] = self.apply_periodic_boundaries(self.positions[time_index+1])
+
+			# Append data to file
+			self.to_file(self.fpath_positions+str(cycle), self.positions[:time_index])
+			self.to_file(self.fpath_velocities+str(cycle), self.velocities[:time_index])
+			self.to_file(self.fpath_potential_energy+str(cycle), self.potential_energy[:time_index])
+
+			# Reset arrays
+			self.positions[0:2,::,::] = self.positions[time_index:time_index+2,::,::]
+			self.velocities[0:2,::,::] = self.velocities[time_index:time_index+2,::,::]
+			self.potential_energy[0:2,::] = self.potential_energy[time_index:time_index+2,::]
 
 
 	def apply_periodic_boundaries(self, positions) -> np.ndarray:
@@ -55,21 +111,36 @@ class Simulation():
 		return np.mod(positions, self.box_size)
 
 
-	def update(self, time_index) -> None:
+	def update_euler(self, time_index) -> None:
+		# Calc new positions
+		self.positions[time_index+1] = self.positions[time_index] + self.velocities[time_index] * self.time_step
+
 		# Calc new velocities
 		distance_vectors = self.distance_vectors(self.positions[time_index])
-		self.velocities[time_index+1] = self.velocities[time_index] + self.force(distance_vectors) * self.time_step
-
-		# Calc new positions
-		self.positions[time_index+1] = self.positions[time_index] + self.velocities[time_index+1] * self.time_step
+		self.forces[1] = self.force(distance_vectors)
+		self.velocities[time_index+1] = self.velocities[time_index] + self.forces[1] * self.time_step
 
 		# Calculate potential energy
 		distances = self.sum_squared(self.distance_vectors(self.positions[time_index]))
 		self.potential_energy[time_index] = np.sum( 4 * ( ( distances**(-12) ) - (distances**(-6)) ), axis=0) / 2
 
 
+	def update_verlet(self, time_index) -> None:
+		# Calc new positions
+		self.positions[time_index+1] = self.positions[time_index] + self.velocities[time_index] * self.time_step + self.time_step**2 / 2 * self.forces[1]
 
-		#print(self.velocities[np.abs(self.velocities) > 1e8])
+		# Calc new force
+		distance_vectors = self.distance_vectors(self.positions[time_index+1])
+		self.forces[0] = self.forces[1]
+		self.forces[1] = self.force(distance_vectors)
+
+		# Calc new velocities
+		self.velocities[time_index+1] = self.velocities[time_index] + self.time_step / 2 * np.sum(self.forces, axis=0)
+
+		# Calculate potential energy
+		distances = self.sum_squared(self.distance_vectors(self.positions[time_index]))
+		self.potential_energy[time_index] = np.sum( 4 * ( ( distances**(-12) ) - (distances**(-6)) ), axis=0) / 2
+
 
 	def force(self, distance_vectors) -> np.ndarray:
 		"""put in distances for every particle, four nearest neighbours with x, y, z components. shape = (particles-1, particles, dimensions)"""
@@ -88,16 +159,23 @@ class Simulation():
 		#print(positions_at_time)
 		for i, position in enumerate(positions_at_time):
 			distance_vectors[::,i,::] = position - np.delete(positions_at_time, i, axis=0)
-			# need to take tiling into account
-			for dim in range(self.dimension):
-				distance_vectors[::,i,dim][distance_vectors[::,i,dim] > self.box_size[dim]/2] -= self.box_size[dim]
-				distance_vectors[::,i,dim][distance_vectors[::,i,dim] < -self.box_size[dim]/2] += self.box_size[dim]
+
+		distance_vectors = ( distance_vectors + self.box_size/2 ) % self.box_size - self.box_size / 2
+
+		#assert np.all(np.abs(distance_vectors) <= self.box_size/2)
 
 		return distance_vectors
 
 
 	def sum_squared(self, arr) -> np.ndarray:
 		return np.sqrt(np.sum(arr**2, axis=-1))
+
+
+	def to_file(self, fpath, data):
+		print("Writing to "+fpath)
+		with open(fpath+".npy", 'wb') as file:
+			np.save(file, data)
+
 
 
 
