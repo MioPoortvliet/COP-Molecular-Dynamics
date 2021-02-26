@@ -6,13 +6,13 @@ from src.IO_utils import *
 import numpy as np
 
 def main() -> None:
-    dimensions = 2
-    particles = 10**dimensions
-    box_size = 10e-9 * particles**(1/dimensions)
+    dimensions = 3
+    particles = 4*3**dimensions
+    box_size = 2e-9
     
     timestep = 1e-2
     
-    sim = Simulation(particles, dimensions, box_size=box_size, time_step=timestep, end_time=3e-11, vel_max=0)
+    sim = Simulation(particles, dimensions, box_size=box_size, time_step=timestep, end_time=1e-10, vel_max=0)
     sim.run_sim()
 
     positions = load_and_concat(sim.fpath, "positions")

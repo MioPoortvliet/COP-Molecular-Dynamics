@@ -16,7 +16,7 @@ class Simulation():
 			assert len(box_size) == dimension
 			self.box_size = box_size / sigma
 
-		self.particles = int(particles)
+		self.particles = 4*3**3#int(particles)
 		self.dimension = int(dimension)
 		self.end_time = end_time / np.sqrt(particle_mass * sigma**2 / (epsilon_over_kb * self.kb))
 		self.time_step = time_step # is already dimensioinless, it is the h
@@ -39,7 +39,7 @@ class Simulation():
 		# Initialize arrays
 		self.positions = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
 		#self.positions[0,::,::] = np.array([[1.5, 1.5], [3, 3], [4.3, 3], [5.6, 3], [1, 3]])[:self.particles,::]
-		self.positions[0,::,::] = np.random.rand(self.particles, self.dimension) * self.box_size
+		self.positions[0,::,::] = self.fcc_lattice(unit_cells=3, atom_spacing=self.box_size.min()/(2*3))
 		#x = np.linspace(0, self.box_size[0], int(self.particles**(1/self.dimension)))
 		#for i, y in enumerate(x):
 		#	for j, z in enumerate(x):
@@ -177,6 +177,18 @@ class Simulation():
 			np.save(file, data)
 
 
+	def fcc_lattice(self, unit_cells, atom_spacing):
+		"Produces a fcc lattice of unit_cells x unit_cells x unit_cells"
+		unit_cell = np.array([[0,0,0], [0, 1, 1], [1, 0, 1], [1, 1, 0]]) * atom_spacing
+		lattice = np.zeros(shape=(4*unit_cells**3, 3))
+		for x in range(unit_cells):
+			for y in range(unit_cells):
+				for z in range(unit_cells):
+					for i, cell in enumerate(unit_cell):
+						lattice[x*4*unit_cells**2+y*4*unit_cells+z*4+i, ::] = cell+atom_spacing*2*(np.array([x, y, z]))
+		#print(lattice)
+
+		return lattice
 
 
 if __name__ == "__main__":
