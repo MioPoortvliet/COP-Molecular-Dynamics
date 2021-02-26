@@ -12,7 +12,8 @@ def main() -> None:
     
     timestep = 1e-2
     
-    sim = Simulation(particles, dimensions, box_size=box_size, time_step=timestep, end_time=1e-10, vel_max=0)
+    sim = Simulation(particles, dimensions, box_size=box_size, time_step=timestep, end_time=1e-11)
+
     sim.run_sim()
 
     positions = load_and_concat(sim.fpath, "positions")
