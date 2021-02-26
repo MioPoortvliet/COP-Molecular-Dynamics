@@ -2,10 +2,11 @@ import numpy as np
 from src.IO_utils import *
 from datetime import datetime
 import json
+from scipy.stats import chi
 
 class Simulation():
 
-	def __init__(self, particles, dimension, box_size, end_time, time_step=1e-3, vel_max=None, particle_mass=6.6335e-26, epsilon_over_kb=119.8, sigma=3.405e-10, steps_between_writing=1000, fpath="data/") -> None:
+	def __init__(self, particles, dimension, box_size, end_time, time_step=1e-3, particle_mass=6.6335e-26, epsilon_over_kb=119.8, sigma=3.405e-10, steps_between_writing=1000, fpath="data/") -> None:
 		"""todo particle mass: 6.6335e-26 kg epsilon_over_kb=119.8 K, sigma=3.405e-10 m"""
 
 		self.kb = 1.38e-23
@@ -24,12 +25,6 @@ class Simulation():
 
 		self.max_timesteps = np.ceil(self.end_time/self.time_step-1).astype(int)
 
-		# make a comment
-		if vel_max is not None:
-			self.vel_max = vel_max / np.sqrt(epsilon_over_kb * self.kb / particle_mass)
-		else:
-			self.vel_max = np.min(self.box_size)/self.time_step/0.001
-
 		self.particle_mass = particle_mass
 		self.epsilon_over_kb = epsilon_over_kb
 		self.sigma = sigma
@@ -46,6 +41,7 @@ class Simulation():
 		#		self.positions[0, i*x.size+j, ::] = (y,z)
 
 		self.velocities = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
+		self.velocities[0,:,:] = self.initialize_velocities()
 		self.potential_energy = np.zeros(shape=(self.steps_between_writing, self.particles))
 
 		self.make_file_structure(fpath)
@@ -60,7 +56,6 @@ class Simulation():
 		header["time_step"] = float(self.time_step)
 		header["steps_between_writing"] = int(self.steps_between_writing)
 		header["total_steps"] = int(self.max_timesteps)
-		header["vel_max"] = float(self.vel_max)
 		header["particle_mass"] = float(self.particle_mass)
 		header["epsilon_over_kb"] = float(self.epsilon_over_kb)
 		header["sigma"] = float(self.sigma)
@@ -169,7 +164,12 @@ class Simulation():
 
 	def sum_squared(self, arr) -> np.ndarray:
 		return np.sqrt(np.sum(arr**2, axis=-1))
+    
+	def initialize_velocities(self):
+		return np.reshape(self.maxwellian_distribution_1D(self.particles*self.dimension),(self.particles,self.dimension))
 
+	def maxwellian_distribution_1D(self, n):
+		return np.array(chi.rvs(1, size=n))
 
 	def to_file(self, fpath, data):
 		print("Writing to "+fpath)
@@ -182,7 +182,7 @@ class Simulation():
 if __name__ == "__main__":
 	import matplotlib.pyplot as plt
 
-	sim = Simulation(2, 2, box_size=1e-9, time_step=1e-3, end_time=1e-11, vel_max=1)
+	sim = Simulation(2, 2, box_size=1e-9, time_step=1e-3, end_time=1e-11)
 	points=int(1e5)
 	x = np.linspace(-1e1, 1e1, points).reshape((1, points, 1))
 	print(sim.box_size/sim.time_step)
