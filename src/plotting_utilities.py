@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_positions(pos, vel, end_time) -> None:
+def plot_positions(pos, vel) -> None:
 	plt.plot(pos[::,::,0], '.')
 	plt.xlabel("Time index")
 	plt.ylabel("Position")

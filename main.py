@@ -12,17 +12,19 @@ def main() -> None:
     
     timestep = 1e-2
     
-    sim = Simulation(particles, dimensions, box_size=box_size, time_step=timestep, end_time=10e-11)
+    #sim = Simulation(particles, dimensions, box_size=box_size, time_step=timestep, end_time=2e-11)
 
-    sim.run_sim()
+    #sim.run_sim()
 
-    positions = load_and_concat(sim.fpath, "positions")
-    velocities = load_and_concat(sim.fpath, "velocities")
-    potential_energy = load_and_concat(sim.fpath, "potential_energy")
+    fpath = "data/2021-03-03T14-42-56/"#sim.fpath
 
-    plot_positions(positions, velocities, sim.end_time)
+    positions = load_and_concat(fpath, "positions")
+    velocities = load_and_concat(fpath, "velocities")
+    potential_energy = load_and_concat(fpath, "potential_energy")
+
+    plot_positions(positions, velocities)
     plot_energies(.5*np.sum(velocities**2, axis=-1), potential_energy)
-    ani = Animation(positions,.5*np.sum(velocities**2, axis=-1), potential_energy, box_size=sim.box_size, dimension=dimensions, frameskip=10)
+    ani = Animation(positions,.5*np.sum(velocities**2, axis=-1), potential_energy, box_size=box_size/3.405e-10, dimension=dimensions, frameskip=10)
     ani.run()
 
 
