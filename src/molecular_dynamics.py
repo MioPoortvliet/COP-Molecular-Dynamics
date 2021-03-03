@@ -100,11 +100,12 @@ class Simulation():
 			self.velocities[0:2, ::, ::] = self.velocities[maxtime:maxtime + 2, ::, ::]
 			self.potential_energy[0:2, ::] = self.potential_energy[maxtime:maxtime + 2, ::]
 
-	def thermalize(self, steps=200):
+	def thermalize(self, steps=500, treshold_percentage = 0.1):
 		# It should not be necessary to thermalize longer than this as steps_between_writing can be quite large
 		assert steps <= self.steps_between_writing
 		velocity_rescaler = 0
-		while np.abs(velocity_rescaler - 1) > 0.1:
+
+		while np.abs(velocity_rescaler - 1) > treshold_percentage:
 			self.update_euler(0)
 			self.run_for_steps(steps)
 

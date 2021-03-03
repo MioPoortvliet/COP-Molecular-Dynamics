@@ -8,15 +8,15 @@ import numpy as np
 def main() -> None:
     dimensions = 3
     particles = 4*3**dimensions
-    box_size = 5e-9
+    box_size = 20e-9
     
     timestep = 1e-2
     
-    #sim = Simulation(particles, dimensions, box_size=box_size, time_step=timestep, end_time=2e-11)
+    sim = Simulation(particles, dimensions, box_size=box_size, time_step=timestep, end_time=2e-11)
 
-    #sim.run_sim()
+    sim.run_sim()
 
-    fpath = "data/2021-03-03T14-42-56/"#sim.fpath
+    fpath = sim.fpath
 
     positions = load_and_concat(fpath, "positions")
     velocities = load_and_concat(fpath, "velocities")
