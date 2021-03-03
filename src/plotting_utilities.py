@@ -7,7 +7,7 @@ def plot_positions(pos, vel, end_time) -> None:
 	plt.ylabel("Position")
 	plt.show()
 
-	plt.hist(vel[-1,::,0])
+	plt.hist(vel[-1,::,0], bins=100)
 	plt.xlabel("Velocity")
 	plt.ylabel("Counts")
 	plt.show()
