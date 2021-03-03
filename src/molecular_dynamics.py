@@ -3,12 +3,12 @@ from src.IO_utils import *
 from datetime import datetime
 import json
 from scipy.stats import chi
-
+from scipy.stats import rv_continuous
 
 class Simulation():
 
 	def __init__(self, particles, dimension, box_size, end_time, time_step=1e-3, particle_mass=6.6335e-26,
-				 epsilon_over_kb=119.8, sigma=3.405e-10, steps_between_writing=1000, fpath="data/") -> None:
+				 epsilon_over_kb=119.8, sigma=3.405e-10, temperature=293.15, steps_between_writing=1000, fpath="data/") -> None:
 		"""todo particle mass: 6.6335e-26 kg epsilon_over_kb=119.8 K, sigma=3.405e-10 m"""
 
 		self.kb = 1.38e-23
@@ -30,6 +30,7 @@ class Simulation():
 		self.particle_mass = particle_mass
 		self.epsilon_over_kb = epsilon_over_kb
 		self.sigma = sigma
+		self.temperature = temperature / epsilon_over_kb
 
 		# self.force_treshold = self.particle_mass * np.mean(self.box_size) / self.time_step
 
@@ -111,7 +112,7 @@ class Simulation():
 
 			# Reset array and keep last values
 			self.positions[0, ::, ::] = self.positions[steps,::, ::]
-			velocity_rescaler = np.sqrt((self.particles-1)*self.dimension/np.sum(self.velocities**2))
+			velocity_rescaler = np.sqrt((self.particles-1)*self.dimension*self.temperature/np.sum(self.velocities[steps,::,::]**2))
 			print(velocity_rescaler)
 			self.velocities[0, ::, ::] = velocity_rescaler*self.velocities[steps,::, ::]
 			self.potential_energy[0, ::] = self.potential_energy[steps, ::]
@@ -192,7 +193,9 @@ class Simulation():
 						  (self.particles, self.dimension))
 
 	def maxwellian_distribution_1D(self, n):
-		return np.array(chi.rvs(1, size=n)) * (np.random.choice(a=[False, True], size=n) * 2 - 1)
+		# return np.array(chi.rvs(df=1,scale = np.sqrt(self.temperature), size=n)) * (np.random.choice(a=[False, True], size=n) * 2 - 1) # waarom niet np.random.choice(a=[-1,1], size=n) ?  
+		maxwellian1d = maxwell1d_gen(name = "maxwellian1d")
+		return np.array(maxwellian1d.rvs(temperature=self.temperature, size=n))
 
 	def to_file(self, fpath, data):
 		print("Writing to " + fpath)
@@ -212,6 +215,10 @@ class Simulation():
 		# print(lattice)
 
 		return lattice
+
+class maxwell1d_gen(rv_continuous):
+	def _pdf(self, velocity,temperature):
+		return np.sqrt(1/(2*np.pi*temperature) )* np.exp(-velocity**2 / (2*temperature))
 
 
 if __name__ == "__main__":
