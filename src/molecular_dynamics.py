@@ -203,7 +203,7 @@ class Simulation():
 			np.save(file, data)
 
 	def fcc_lattice(self, unit_cells, atom_spacing):
-		"Produces a fcc lattice of unit_cells x unit_cells x unit_cells"
+		"""Produces a fcc lattice of unit_cells x unit_cells x unit_cells"""
 		unit_cell = np.array([[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 0]]) * atom_spacing
 		lattice = np.zeros(shape=(4 * unit_cells ** 3, 3))
 		for x in range(unit_cells):
