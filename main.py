@@ -69,7 +69,7 @@ def run_statistics(unitless_density, unitless_temperature, N):
     return np.mean(unitless_pressure)
 
 
-def calc_pressure(unitless_density, unitless_temperature, steps=100):
+def calc_pressure(unitless_density, unitless_temperature, steps=100) -> np.float:
     fpath = run_simulation(
         unitless_density=unitless_density,
         unitless_temperature=unitless_temperature,
@@ -77,7 +77,6 @@ def calc_pressure(unitless_density, unitless_temperature, steps=100):
     )
 
     positions = load_and_concat(fpath, "positions")
-
 
     return pressure_over_rho(positions) * unitless_density
 
@@ -89,12 +88,17 @@ def density_temp_plot(temprange, densityrange):
             print(T, rho)
             pressure[i,j] = calc_pressure(rho, T)
 
-    rhoT_plot(pressure)
+    np.save("data/pressure/pressure.npy", pressure)
+    np.save("data/pressure/temprange.npy", temprange)
+    np.save("data/pressure/rhorange.npy", densityrange)
+
+
+    rhoT_plot(pressure, temprange, densityrange)
 
 
 
 if __name__ == "__main__":
     #fpath = run_simulation()
     #from_existing_data(fpath)
-    density_temp_plot(np.linspace(0.1, 3, 15), np.linspace(0.1, 1.6, 15))
-    #run_statistics(1, 1, 1)
+    resolution = 25
+    density_temp_plot(np.linspace(0.1, 3, resolution), np.linspace(0.3, 1.3, resolution)[::-1])

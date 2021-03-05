@@ -4,6 +4,7 @@ from src.utils import *
 from src.physics import *
 from datetime import datetime
 import json
+import warnings
 
 
 class Simulation():
@@ -12,8 +13,8 @@ class Simulation():
 				 epsilon_over_kb=119.8, sigma=3.405e-10, steps_between_writing=1000, fpath="data/") -> None:
 		"""todo particle mass: 6.6335e-26 kg epsilon_over_kb=119.8 K, sigma=3.405e-10 m"""
 
-		self.kb = 1.38e-23
 		# Store constants
+		self.kb = 1.38e-23
 
 		self.unit_cells_along_axis = unit_cells_along_axis
 
@@ -23,6 +24,10 @@ class Simulation():
 			self.unitless_density = density * sigma**self.dimension
 		else:
 			self.unitless_density = unitless_density
+
+		if self.unitless_density > 1.2:
+			warnings.warn("Density is so high that the simulation might fail to thermalize.")
+
 		self.box_size = (self.particles / self.unitless_density) ** (1/self.dimension)
 
 		self.time_step = time_step  # is already dimensioinless, it is the h
@@ -106,7 +111,7 @@ class Simulation():
 			self.velocities[0:2, ::, ::] = self.velocities[maxtime:maxtime + 2, ::, ::]
 			self.potential_energy[0:2, ::] = self.potential_energy[maxtime:maxtime + 2, ::]
 
-	def thermalize(self, steps=100, treshold_percentage=0.2):
+	def thermalize(self, steps=100, treshold_percentage=0.15):
 		# It should not be necessary to thermalize longer than this as steps_between_writing can be quite large
 		assert steps <= self.steps_between_writing
 		velocity_rescaler = 0
