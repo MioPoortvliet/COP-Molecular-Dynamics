@@ -1,6 +1,7 @@
 import numpy as np
 from src.IO_utils import *
 from src.utils import *
+from src.physics import *
 from datetime import datetime
 import json
 import scipy.stats
@@ -70,6 +71,9 @@ class Simulation():
 		header["epsilon_over_kb"] = float(self.epsilon_over_kb)
 		header["sigma"] = float(self.sigma)
 		header["kb"] = float(self.kb)
+		header["unitless_density"] = self.unitless_density
+		header["unitless_temperature"] = self.temperature
+		header["box_size"] = self.box_size
 
 		print(header)
 
@@ -130,17 +134,17 @@ class Simulation():
 	def run_for_steps(self, steps):
 		for time_index in np.arange(1, steps, dtype=int):
 			self.update_verlet(time_index)
-			self.positions[time_index + 1] = apply_periodic_boundaries(self.positions[time_index + 1], self.box_size)
+			#self.positions[time_index + 1] = apply_periodic_boundaries(self.positions[time_index + 1], self.box_size)
 
 
 
 	def update_euler(self, time_index) -> None:
 		# Calc new positions
-		self.positions[time_index + 1] = self.positions[time_index] + self.velocities[time_index] * self.time_step
+		self.positions[time_index + 1] = apply_periodic_boundaries(self.positions[time_index] + self.velocities[time_index] * self.time_step, self.box_size)
 
 		# Calc new velocities
 		distance_vectors = get_distance_vectors(self.positions[time_index], self.box_size, self.dimension)
-		self.forces[1] = self.force(distance_vectors)
+		self.forces[1] = force(distance_vectors)
 		self.velocities[time_index + 1] = self.velocities[time_index] + self.forces[1] * self.time_step
 
 		# Calculate potential energy
@@ -149,13 +153,13 @@ class Simulation():
 
 	def update_verlet(self, time_index) -> None:
 		# Calc new positions
-		self.positions[time_index + 1] = self.positions[time_index] + self.velocities[
-			time_index] * self.time_step + self.time_step ** 2 / 2 * self.forces[1]
+		self.positions[time_index + 1] = apply_periodic_boundaries(self.positions[time_index] + self.velocities[
+			time_index] * self.time_step + self.time_step ** 2 / 2 * self.forces[1], self.box_size)
 
 		# Calc new force
 		distance_vectors = get_distance_vectors(self.positions[time_index + 1], self.box_size, self.dimension)
 		self.forces[0] = self.forces[1]
-		self.forces[1] = self.force(distance_vectors)
+		self.forces[1] = force(distance_vectors)
 
 		# Calc new velocities
 		self.velocities[time_index + 1] = self.velocities[time_index] + self.time_step / 2 * np.sum(self.forces, axis=0)
@@ -164,18 +168,7 @@ class Simulation():
 		distances = sum_squared(get_distance_vectors(self.positions[time_index], self.box_size, self.dimension))
 		self.potential_energy[time_index] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
 
-	def force(self, distance_vectors) -> np.ndarray:
-		"""put in distances for every particle, four nearest neighbours with x, y, z components. shape = (particles-1, particles, dimensions)"""
-		distances = sum_squared(distance_vectors)
 
-		force = np.zeros(shape=distance_vectors.shape[1::])
-		# print(distance_vectors[0,0,::]/distances[0,0])
-		for dimension in range(self.dimension):
-			force[::, dimension] = np.sum(
-				4 * (12 / distances ** 13 - 6 / distances ** 7) * distance_vectors[::, ::, dimension] / distances,
-				axis=0)
-
-		return force
 
 if __name__ == "__main__":
 	import matplotlib.pyplot as plt

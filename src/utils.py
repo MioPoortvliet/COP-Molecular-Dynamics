@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.stats
+import matplotlib.pyplot as plt
 
 def sum_squared(arr) -> np.ndarray:
 	return np.sqrt(np.sum(arr ** 2, axis=-1))
@@ -23,25 +24,15 @@ def apply_periodic_boundaries(positions, period) -> np.ndarray:
 	"""Simply apply modulus. Is it faster to check first? Probably not."""
 	return np.mod(positions, period)
 
-def initialize_maxwellian_velocities(temperature, particles, dimension):
-	return np.reshape(np.array(scipy.stats.norm.rvs(scale=np.sqrt(temperature), size=particles * dimension)),
-						  (particles, dimension))
+
+def distance_hist(array, bins, period) -> np.array:
+	distances = sum_squared(get_distance_vectors(array, period, array.shape[-1]))
+	hist, _ = np.histogram(distances.flatten(), bins=bins)
+	return hist
 
 
-def fcc_lattice(unit_cells, atom_spacing):
-	"""Produces a fcc lattice of unit_cells x unit_cells x unit_cells"""
-	unit_cell = np.array([[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 0]]) * atom_spacing
-	lattice = np.zeros(shape=(4 * unit_cells ** 3, 3))
-	for x in range(unit_cells):
-		for y in range(unit_cells):
-			for z in range(unit_cells):
-				for i, cell in enumerate(unit_cell):
-					lattice[x * 4 * unit_cells ** 2 + y * 4 * unit_cells + z * 4 + i,
-					::] = cell + atom_spacing * 2 * (np.array([x, y, z]))
-	# print(lattice)
-
-	return lattice
 
 
-def get_correlations(array):
-	pass
+
+
+

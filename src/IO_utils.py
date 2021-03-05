@@ -2,6 +2,7 @@ import numpy as np
 import tables
 import os
 import re
+import json
 
 
 def ensure_dir(file_path):
@@ -19,6 +20,13 @@ def load_and_concat(fpath, file_identifier):
         arrays.append(np.load(fpath+file, allow_pickle=True))
 
     return np.concatenate(arrays)
+
+
+def load_json(fpath, fname="00-header.json"):
+    with open(fpath+fname) as json_file:
+        data = json.load(json_file)
+
+    return data
 
 
 def to_file(fpath, data):
