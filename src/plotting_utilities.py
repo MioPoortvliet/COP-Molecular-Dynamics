@@ -37,11 +37,18 @@ def plot_correlation_function(correlation_function, distance, properties):
 
 
 def rhoT_plot(pressure_array, temprange, densityrange):
-	cb = plt.imshow(pressure_array)
+	cb = plt.imshow(np.rot90(pressure_array[::-1,::]))
 	plt.colorbar(cb)
-	plt.xticks(ticks=np.arange(temprange.size), labels=temprange)
+	if temprange.size > 7:
+		plt.xticks(ticks=np.arange(0, temprange.size, int(temprange.size/5)), labels=np.round(temprange, 2)[::int(temprange.size/5)])
+	else:
+		plt.xticks(ticks=np.arange(temprange.size), labels=np.round(temprange, 2))
+
 	plt.xlabel("Temperature")
-	plt.yticks(ticks=np.arange(densityrange.size), labels=densityrange)
+	if densityrange.size > 7:
+		plt.yticks(ticks=np.arange(0, densityrange.size, int(densityrange.size/5))[::-1], labels=np.round(densityrange, 2)[::int(densityrange.size/5)])
+	else:
+		plt.yticks(ticks=np.arange(densityrange.size)[::-1], labels=np.round(densityrange, 2))
 	plt.ylabel("Density")
-	plt.title("wow")
+	plt.title("Pressure")
 	plt.show()

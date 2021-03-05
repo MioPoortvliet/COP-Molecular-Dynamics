@@ -1,16 +1,23 @@
 import numpy as np
-import tables
 import os
-import re
 import json
+import shutil
 
 
-def ensure_dir(file_path):
+def ensure_dir(file_path: str) -> None:
     if not os.path.exists(file_path):
         os.makedirs(file_path)
 
 
-def load_and_concat(fpath, file_identifier):
+def del_dirs(path: str) -> None:
+    """REMOVES SPECIFIED DIR!"""
+    print(f"Removing {path}")
+    if path[-1] == "/":
+        path = path[:-1]
+    shutil.rmtree(path)
+
+
+def load_and_concat(fpath: str, file_identifier:str) -> np.ndarray:
     arrays = []
     files = [f for f in os.listdir(fpath) if f[:len(file_identifier)] == file_identifier]
     file_numbers = np.array([int(f.replace(file_identifier, '').replace('-', '').replace('.npy', '')) for f in files])
@@ -22,14 +29,13 @@ def load_and_concat(fpath, file_identifier):
     return np.concatenate(arrays)
 
 
-def load_json(fpath, fname="00-header.json"):
+def load_json(fpath: str, fname="00-header.json") -> dict:
     with open(fpath+fname) as json_file:
         data = json.load(json_file)
 
     return data
 
 
-def to_file(fpath, data):
-    print("Writing to " + fpath)
+def to_file(fpath: str, data: object) -> object:
     with open(fpath + ".npy", 'wb') as file:
         np.save(file, data)
