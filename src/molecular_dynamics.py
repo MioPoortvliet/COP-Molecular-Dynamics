@@ -2,8 +2,9 @@ import numpy as np
 from src.IO_utils import *
 from datetime import datetime
 import json
-from scipy.stats import chi
-from scipy.stats import rv_continuous
+import scipy.stats
+# from scipy.stats import chi
+# from scipy.stats import rv_continuous
 
 class Simulation():
 
@@ -193,9 +194,7 @@ class Simulation():
 						  (self.particles, self.dimension))
 
 	def maxwellian_distribution_1D(self, n):
-		# return np.array(chi.rvs(df=1,scale = np.sqrt(self.temperature), size=n)) * (np.random.choice(a=[False, True], size=n) * 2 - 1) # waarom niet np.random.choice(a=[-1,1], size=n) ?  
-		maxwellian1d = maxwell1d_gen(name = "maxwellian1d")
-		return np.array(maxwellian1d.rvs(temperature=self.temperature, size=n))
+		return np.array(scipy.stats.norm.rvs(scale=np.sqrt(self.temperature), size=n))
 
 	def to_file(self, fpath, data):
 		print("Writing to " + fpath)
@@ -215,10 +214,6 @@ class Simulation():
 		# print(lattice)
 
 		return lattice
-
-class maxwell1d_gen(rv_continuous):
-	def _pdf(self, velocity,temperature):
-		return np.sqrt(1/(2*np.pi*temperature) )* np.exp(-velocity**2 / (2*temperature))
 
 
 if __name__ == "__main__":
