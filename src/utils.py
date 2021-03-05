@@ -1,5 +1,5 @@
 import numpy as np
-
+import scipy.stats
 
 def sum_squared(arr) -> np.ndarray:
 	return np.sqrt(np.sum(arr ** 2, axis=-1))
@@ -22,6 +22,10 @@ def get_distance_vectors(positions_at_time, box_size, dimension) -> np.ndarray:
 def apply_periodic_boundaries(positions, period) -> np.ndarray:
 	"""Simply apply modulus. Is it faster to check first? Probably not."""
 	return np.mod(positions, period)
+
+def initialize_maxwellian_velocities(temperature, particles, dimension):
+	return np.reshape(np.array(scipy.stats.norm.rvs(scale=np.sqrt(temperature), size=particles * dimension)),
+						  (particles, dimension))
 
 
 def fcc_lattice(unit_cells, atom_spacing):

@@ -52,7 +52,7 @@ class Simulation():
 		#		self.positions[0, i*x.size+j, ::] = (y,z)
 
 		self.velocities = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
-		self.velocities[0, :, :] = self.initialize_velocities()
+		self.velocities[0, :, :] = initialize_maxwellian_velocities(self.temperature, self.particles, self.dimension)
 		self.potential_energy = np.zeros(shape=(self.steps_between_writing, self.particles))
 
 		self.make_file_structure(fpath)
@@ -176,16 +176,6 @@ class Simulation():
 				axis=0)
 
 		return force
-
-
-	def initialize_velocities(self):
-		return np.reshape(self.maxwellian_distribution_1D(self.particles * self.dimension),
-						  (self.particles, self.dimension))
-
-	def maxwellian_distribution_1D(self, n):
-		return np.array(scipy.stats.norm.rvs(scale=np.sqrt(self.temperature), size=n))
-
-
 
 if __name__ == "__main__":
 	import matplotlib.pyplot as plt
