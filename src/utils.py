@@ -37,3 +37,7 @@ def fcc_lattice(unit_cells, atom_spacing):
 	# print(lattice)
 
 	return lattice
+
+
+def get_correlations(array):
+	pass
