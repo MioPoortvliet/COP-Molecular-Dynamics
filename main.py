@@ -9,7 +9,7 @@ def main() -> None:
     unit_cells = 3
 
     density = 1
-    temperature = 0.3 # k
+    temperature = 1 # k
     
     timestep = 1e-2 # unitless
     end_time = 2e-11 # seconds
