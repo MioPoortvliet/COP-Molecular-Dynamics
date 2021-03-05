@@ -130,7 +130,7 @@ class Simulation():
 			self.run_for_steps(maxtime)
 
 			# Append data to file
-			self.print_(1, f"Writing {maxtime+1}/{self.max_timesteps} steps to {self.fpath}")
+			self.print_(1, f"Writing {maxtime+1}/{self.max_timesteps} steps to {self.fpath}.")
 			to_file(self.fpath_positions + str(cycle), self.positions[:maxtime])
 			to_file(self.fpath_velocities + str(cycle), self.velocities[:maxtime])
 			to_file(self.fpath_potential_energy + str(cycle), self.potential_energy[:maxtime])
@@ -140,13 +140,13 @@ class Simulation():
 			self.velocities[0:2, ::, ::] = self.velocities[maxtime:maxtime + 2, ::, ::]
 			self.potential_energy[0:2, ::] = self.potential_energy[maxtime:maxtime + 2, ::]
 
-		self.print_(1, f"\nDone! Output to {self.fpath} \n")
+		self.print_(1, f"\nDone! Output to {self.fpath}. \n")
 
 
 	def thermalize(self, steps=100, treshold_percentage=0.15) -> None:
 		# It should not be necessary to thermalize longer than this as steps_between_writing can be quite large
 		assert steps <= self.steps_between_writing
-		self.print_(2, "Starting thermalization")
+		self.print_(2, "Starting thermalization.")
 
 		velocity_rescaler = 0
 		while np.abs(velocity_rescaler - 1) > treshold_percentage:
@@ -159,7 +159,7 @@ class Simulation():
 			self.velocities[0, ::, ::] = velocity_rescaler*self.velocities[steps,::, ::]
 			self.potential_energy[0, ::] = self.potential_energy[steps, ::]
 
-			self.print_(1, f"Thermalization stops if {velocity_rescaler - 1:2.3f} <= {treshold_percentage}.")
+			self.print_(1, f"Thermalization stops if {abs(velocity_rescaler - 1):1.3f} <= {treshold_percentage}.")
 			assert velocity_rescaler > 1e-10
 
 

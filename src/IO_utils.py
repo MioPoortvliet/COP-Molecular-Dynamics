@@ -11,9 +11,7 @@ def ensure_dir(file_path: str) -> None:
 
 def del_dirs(path: str) -> None:
     """REMOVES SPECIFIED DIR!"""
-    print(f"Removing {path}")
-    if path[-1] == "/":
-        path = path[:-1]
+    print(f"Removing {path}.")
     shutil.rmtree(path)
 
 
