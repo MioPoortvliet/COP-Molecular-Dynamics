@@ -19,3 +19,9 @@ def load_and_concat(fpath, file_identifier):
         arrays.append(np.load(fpath+file, allow_pickle=True))
 
     return np.concatenate(arrays)
+
+
+def to_file(fpath, data):
+    print("Writing to " + fpath)
+    with open(fpath + ".npy", 'wb') as file:
+        np.save(file, data)

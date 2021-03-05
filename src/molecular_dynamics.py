@@ -1,5 +1,6 @@
 import numpy as np
 from src.IO_utils import *
+from src.utils import *
 from datetime import datetime
 import json
 import scipy.stats
@@ -99,9 +100,9 @@ class Simulation():
 			self.run_for_steps(maxtime)
 
 			# Append data to file
-			self.to_file(self.fpath_positions + str(cycle), self.positions[:maxtime])
-			self.to_file(self.fpath_velocities + str(cycle), self.velocities[:maxtime])
-			self.to_file(self.fpath_potential_energy + str(cycle), self.potential_energy[:maxtime])
+			to_file(self.fpath_positions + str(cycle), self.positions[:maxtime])
+			to_file(self.fpath_velocities + str(cycle), self.velocities[:maxtime])
+			to_file(self.fpath_potential_energy + str(cycle), self.potential_energy[:maxtime])
 
 			# Reset arrays
 			self.positions[0:2, ::, ::] = self.positions[maxtime:maxtime + 2, ::, ::]
@@ -129,25 +130,21 @@ class Simulation():
 	def run_for_steps(self, steps):
 		for time_index in np.arange(1, steps, dtype=int):
 			self.update_verlet(time_index)
-			self.positions[time_index + 1] = self.apply_periodic_boundaries(self.positions[time_index + 1])
+			self.positions[time_index + 1] = apply_periodic_boundaries(self.positions[time_index + 1], self.box_size)
 
 
-	def apply_periodic_boundaries(self, positions) -> np.ndarray:
-		"""Simply apply modulus. Is it faster to check first? Probably not."""
-
-		return np.mod(positions, self.box_size)
 
 	def update_euler(self, time_index) -> None:
 		# Calc new positions
 		self.positions[time_index + 1] = self.positions[time_index] + self.velocities[time_index] * self.time_step
 
 		# Calc new velocities
-		distance_vectors = self.distance_vectors(self.positions[time_index])
+		distance_vectors = get_distance_vectors(self.positions[time_index], self.box_size, self.dimension)
 		self.forces[1] = self.force(distance_vectors)
 		self.velocities[time_index + 1] = self.velocities[time_index] + self.forces[1] * self.time_step
 
 		# Calculate potential energy
-		distances = self.sum_squared(self.distance_vectors(self.positions[time_index]))
+		distances = sum_squared(get_distance_vectors(self.positions[time_index], self.box_size, self.dimension))
 		self.potential_energy[time_index] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
 
 	def update_verlet(self, time_index) -> None:
@@ -156,7 +153,7 @@ class Simulation():
 			time_index] * self.time_step + self.time_step ** 2 / 2 * self.forces[1]
 
 		# Calc new force
-		distance_vectors = self.distance_vectors(self.positions[time_index + 1])
+		distance_vectors = get_distance_vectors(self.positions[time_index + 1], self.box_size, self.dimension)
 		self.forces[0] = self.forces[1]
 		self.forces[1] = self.force(distance_vectors)
 
@@ -164,12 +161,12 @@ class Simulation():
 		self.velocities[time_index + 1] = self.velocities[time_index] + self.time_step / 2 * np.sum(self.forces, axis=0)
 
 		# Calculate potential energy
-		distances = self.sum_squared(self.distance_vectors(self.positions[time_index]))
+		distances = sum_squared(get_distance_vectors(self.positions[time_index], self.box_size, self.dimension))
 		self.potential_energy[time_index] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
 
 	def force(self, distance_vectors) -> np.ndarray:
 		"""put in distances for every particle, four nearest neighbours with x, y, z components. shape = (particles-1, particles, dimensions)"""
-		distances = self.sum_squared(distance_vectors)
+		distances = sum_squared(distance_vectors)
 
 		force = np.zeros(shape=distance_vectors.shape[1::])
 		# print(distance_vectors[0,0,::]/distances[0,0])
@@ -180,20 +177,6 @@ class Simulation():
 
 		return force
 
-	def distance_vectors(self, positions_at_time) -> np.ndarray:
-		distance_vectors = np.zeros(shape=(positions_at_time.shape[0] - 1, positions_at_time.shape[0], self.dimension))
-		# print(positions_at_time)
-		for i, position in enumerate(positions_at_time):
-			distance_vectors[::, i, ::] = position - np.delete(positions_at_time, i, axis=0)
-
-		distance_vectors = (distance_vectors + self.box_size / 2) % self.box_size - self.box_size / 2
-
-		# assert np.all(np.abs(distance_vectors) <= self.box_size/2)
-
-		return distance_vectors
-
-	def sum_squared(self, arr) -> np.ndarray:
-		return np.sqrt(np.sum(arr ** 2, axis=-1))
 
 	def initialize_velocities(self):
 		return np.reshape(self.maxwellian_distribution_1D(self.particles * self.dimension),
@@ -201,11 +184,6 @@ class Simulation():
 
 	def maxwellian_distribution_1D(self, n):
 		return np.array(scipy.stats.norm.rvs(scale=np.sqrt(self.temperature), size=n))
-
-	def to_file(self, fpath, data):
-		print("Writing to " + fpath)
-		with open(fpath + ".npy", 'wb') as file:
-			np.save(file, data)
 
 	def fcc_lattice(self, unit_cells, atom_spacing):
 		"""Produces a fcc lattice of unit_cells x unit_cells x unit_cells"""
