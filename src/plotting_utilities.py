@@ -34,3 +34,12 @@ def plot_correlation_function(correlation_function, distance, properties):
 	plt.ylabel("Correlation function $g(r)$ [-]")
 	plt.title(f'{properties["particles"]} particles, {properties["total_steps"]} steps, $\\rho={properties["unitless_density"]}$, $T={properties["unitless_temperature"]}$')
 	plt.show()
+
+
+def rhoT_plot(pressure_array):
+	cb = plt.imshow(pressure_array)
+	plt.colorbar(cb)
+	plt.xlabel("Temperature")
+	plt.ylabel("Density")
+	plt.title("wow")
+	plt.show()

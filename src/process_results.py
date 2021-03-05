@@ -3,10 +3,11 @@ from src.utils import *
 from src.physics import *
 
 
-def correlation_function(array, box_length, delta_r = 0.001) -> np.array:
+def correlation_function(array, box_length) -> np.array:
 	time_steps, particles, dimension = array.shape
 
-	distance = np.arange(delta_r, box_length/2 * np.sqrt(dimension), delta_r)
+	distance = np.linspace(0.00001*box_length, box_length/2 * np.sqrt(dimension), 1000)
+	delta_r = distance[1]-distance[0]
 
 	average_distance_frequency = np.zeros(distance.size-1)
 	for row in array:

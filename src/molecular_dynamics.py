@@ -67,9 +67,9 @@ class Simulation():
 		header["epsilon_over_kb"] = float(self.epsilon_over_kb)
 		header["sigma"] = float(self.sigma)
 		header["kb"] = float(self.kb)
-		header["unitless_density"] = self.unitless_density
-		header["unitless_temperature"] = self.temperature
-		header["box_size"] = self.box_size
+		header["unitless_density"] = float(self.unitless_density)
+		header["unitless_temperature"] = float(self.temperature)
+		header["box_size"] = float(self.box_size)
 
 		print(header)
 
@@ -106,7 +106,7 @@ class Simulation():
 			self.velocities[0:2, ::, ::] = self.velocities[maxtime:maxtime + 2, ::, ::]
 			self.potential_energy[0:2, ::] = self.potential_energy[maxtime:maxtime + 2, ::]
 
-	def thermalize(self, steps=100, treshold_percentage=0.1):
+	def thermalize(self, steps=100, treshold_percentage=0.2):
 		# It should not be necessary to thermalize longer than this as steps_between_writing can be quite large
 		assert steps <= self.steps_between_writing
 		velocity_rescaler = 0
@@ -121,6 +121,9 @@ class Simulation():
 			print(velocity_rescaler)
 			self.velocities[0, ::, ::] = velocity_rescaler*self.velocities[steps,::, ::]
 			self.potential_energy[0, ::] = self.potential_energy[steps, ::]
+
+			assert velocity_rescaler > 1e-10
+
 
 
 	def run_for_steps(self, steps):
