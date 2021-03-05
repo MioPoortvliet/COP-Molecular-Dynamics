@@ -6,13 +6,15 @@ from src.IO_utils import *
 import numpy as np
 
 def main() -> None:
-    dimensions = 3
-    particles = 4*3**dimensions
-    box_size = 20e-9
+    unit_cells = 3
+
+    density = 1
+    temperature = 0.3 # k
     
-    timestep = 1e-2
+    timestep = 1e-2 # unitless
+    end_time = 2e-11 # seconds
     
-    sim = Simulation(particles, dimensions, box_size=box_size, time_step=timestep, end_time=2e-11)
+    sim = Simulation(unit_cells_along_axis=unit_cells, unitless_density=density, unitless_temperature=temperature, time_step=timestep, end_time=end_time)
 
     sim.run_sim()
 
@@ -24,7 +26,7 @@ def main() -> None:
 
     plot_positions(positions, velocities)
     plot_energies(.5*np.sum(velocities**2, axis=-1), potential_energy)
-    ani = Animation(positions,.5*np.sum(velocities**2, axis=-1), potential_energy, box_size=box_size/3.405e-10, dimension=dimensions, frameskip=10)
+    ani = Animation(positions,.5*np.sum(velocities**2, axis=-1), potential_energy, box_size=sim.box_size, dimension=3, frameskip=10)
     ani.run()
 
 

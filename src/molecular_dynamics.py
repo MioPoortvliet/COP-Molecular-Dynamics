@@ -7,20 +7,23 @@ from scipy.stats import rv_continuous
 
 class Simulation():
 
-	def __init__(self, particles, dimension, box_size, end_time, time_step=1e-3, particle_mass=6.6335e-26,
-				 epsilon_over_kb=119.8, sigma=3.405e-10, temperature=293.15, steps_between_writing=1000, fpath="data/") -> None:
+	def __init__(self, end_time=1e-11, density=1e5, unitless_density=None, temperature=293.15, unitless_temperature=None, time_step=1e-3, unit_cells_along_axis=3, particle_mass=6.6335e-26,
+				 epsilon_over_kb=119.8, sigma=3.405e-10, steps_between_writing=1000, fpath="data/") -> None:
 		"""todo particle mass: 6.6335e-26 kg epsilon_over_kb=119.8 K, sigma=3.405e-10 m"""
 
 		self.kb = 1.38e-23
 		# Store constants
-		if type(box_size) in (int, float):
-			self.box_size = np.repeat(box_size / sigma, dimension)
-		else:
-			assert len(box_size) == dimension
-			self.box_size = box_size / sigma
 
-		self.particles = 4 * 3 ** 3  # int(particles)
-		self.dimension = int(dimension)
+		self.unit_cells_along_axis = unit_cells_along_axis
+
+		self.dimension = 3
+		self.particles = 4 * unit_cells_along_axis ** self.dimension  # int(particles)
+		if unitless_density is None:
+			self.unitless_density = density * sigma**self.dimension
+		else:
+			self.unitless_density = unitless_density
+		self.box_size = (self.particles / self.unitless_density) ** (1/self.dimension)
+
 		self.end_time = end_time / np.sqrt(particle_mass * sigma ** 2 / (epsilon_over_kb * self.kb))
 		self.time_step = time_step  # is already dimensioinless, it is the h
 		self.steps_between_writing = steps_between_writing
@@ -30,14 +33,17 @@ class Simulation():
 		self.particle_mass = particle_mass
 		self.epsilon_over_kb = epsilon_over_kb
 		self.sigma = sigma
-		self.temperature = temperature / epsilon_over_kb
+		if unitless_temperature is None:
+			self.temperature = temperature / epsilon_over_kb
+		else:
+			self.temperature = unitless_temperature
 
 		# self.force_treshold = self.particle_mass * np.mean(self.box_size) / self.time_step
 
 		# Initialize arrays
 		self.positions = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
 		# self.positions[0,::,::] = np.array([[1.5, 1.5], [3, 3], [4.3, 3], [5.6, 3], [1, 3]])[:self.particles,::]
-		self.positions[0, ::, ::] = self.fcc_lattice(unit_cells=3, atom_spacing=self.box_size.min() / (2 * 3))
+		self.positions[0, ::, ::] = self.fcc_lattice(unit_cells=self.unit_cells_along_axis, atom_spacing=self.box_size / (2 * self.unit_cells_along_axis))
 		# x = np.linspace(0, self.box_size[0], int(self.particles**(1/self.dimension)))
 		# for i, y in enumerate(x):
 		#	for j, z in enumerate(x):
