@@ -19,6 +19,21 @@ def get_distance_vectors(positions_at_time, box_size, dimension) -> np.ndarray:
 	return distance_vectors
 
 
-def apply_periodic_boundaries(positions, box_size) -> np.ndarray:
+def apply_periodic_boundaries(positions, period) -> np.ndarray:
 	"""Simply apply modulus. Is it faster to check first? Probably not."""
-	return np.mod(positions, box_size)
+	return np.mod(positions, period)
+
+
+def fcc_lattice(self, unit_cells, atom_spacing):
+	"""Produces a fcc lattice of unit_cells x unit_cells x unit_cells"""
+	unit_cell = np.array([[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 0]]) * atom_spacing
+	lattice = np.zeros(shape=(4 * unit_cells ** 3, 3))
+	for x in range(unit_cells):
+		for y in range(unit_cells):
+			for z in range(unit_cells):
+				for i, cell in enumerate(unit_cell):
+					lattice[x * 4 * unit_cells ** 2 + y * 4 * unit_cells + z * 4 + i,
+					::] = cell + atom_spacing * 2 * (np.array([x, y, z]))
+	# print(lattice)
+
+	return lattice

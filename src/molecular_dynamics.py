@@ -45,7 +45,7 @@ class Simulation():
 		# Initialize arrays
 		self.positions = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
 		# self.positions[0,::,::] = np.array([[1.5, 1.5], [3, 3], [4.3, 3], [5.6, 3], [1, 3]])[:self.particles,::]
-		self.positions[0, ::, ::] = self.fcc_lattice(unit_cells=self.unit_cells_along_axis, atom_spacing=self.box_size / (2 * self.unit_cells_along_axis))
+		self.positions[0, ::, ::] = fcc_lattice(unit_cells=self.unit_cells_along_axis, atom_spacing=self.box_size / (2 * self.unit_cells_along_axis))
 		# x = np.linspace(0, self.box_size[0], int(self.particles**(1/self.dimension)))
 		# for i, y in enumerate(x):
 		#	for j, z in enumerate(x):
@@ -185,19 +185,6 @@ class Simulation():
 	def maxwellian_distribution_1D(self, n):
 		return np.array(scipy.stats.norm.rvs(scale=np.sqrt(self.temperature), size=n))
 
-	def fcc_lattice(self, unit_cells, atom_spacing):
-		"""Produces a fcc lattice of unit_cells x unit_cells x unit_cells"""
-		unit_cell = np.array([[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 0]]) * atom_spacing
-		lattice = np.zeros(shape=(4 * unit_cells ** 3, 3))
-		for x in range(unit_cells):
-			for y in range(unit_cells):
-				for z in range(unit_cells):
-					for i, cell in enumerate(unit_cell):
-						lattice[x * 4 * unit_cells ** 2 + y * 4 * unit_cells + z * 4 + i,
-						::] = cell + atom_spacing * 2 * (np.array([x, y, z]))
-		# print(lattice)
-
-		return lattice
 
 
 if __name__ == "__main__":
