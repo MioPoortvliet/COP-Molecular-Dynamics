@@ -1,13 +1,14 @@
 import numpy as np
 import scipy.stats
 import matplotlib.pyplot as plt
+from scipy.spatial import distance_matrix
 
 def sum_squared(arr) -> np.ndarray:
 	return np.sqrt(np.sum(arr ** 2, axis=-1))
 
 
 def get_distance_vectors(positions_at_time, box_size, dimension) -> np.ndarray:
-	"""Produces distances r_{ij} without r_{ii}, using minimal image convention"""
+	"""Produces distances r_{ij} without r_{ii}, using minimal image convention. Takes direction into account!"""
 	distance_vectors = np.zeros(shape=(positions_at_time.shape[0] - 1, positions_at_time.shape[0], dimension))
 	# print(positions_at_time)
 	for i, position in enumerate(positions_at_time):
@@ -25,14 +26,17 @@ def apply_periodic_boundaries(positions, period) -> np.ndarray:
 	return np.mod(positions, period)
 
 
-def distance_hist(array, bins, period) -> np.array:
+def distance_hist_old(array, bins, period) -> np.array:
 	distances = sum_squared(get_distance_vectors(array, period, array.shape[-1]))
+	print(distances)
 	hist, _ = np.histogram(distances.flatten(), bins=bins)
 	return hist
 
 
-
-
+def distance_hist(array, bins) -> np.array:
+	distances = distance_matrix(array, array)
+	hist, _ = np.histogram(distances.flatten(), bins=bins)
+	return hist
 
 
 

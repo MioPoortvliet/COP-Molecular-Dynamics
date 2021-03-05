@@ -4,13 +4,11 @@ from src.utils import *
 from src.physics import *
 from datetime import datetime
 import json
-import scipy.stats
-# from scipy.stats import chi
-# from scipy.stats import rv_continuous
+
 
 class Simulation():
 
-	def __init__(self, end_time=1e-11, density=1e5, unitless_density=None, temperature=293.15, unitless_temperature=None, time_step=1e-3, unit_cells_along_axis=3, particle_mass=6.6335e-26,
+	def __init__(self, end_time=None, steps = 1000, density=1e5, unitless_density=None, temperature=293.15, unitless_temperature=None, time_step=1e-3, unit_cells_along_axis=3, particle_mass=6.6335e-26,
 				 epsilon_over_kb=119.8, sigma=3.405e-10, steps_between_writing=1000, fpath="data/") -> None:
 		"""todo particle mass: 6.6335e-26 kg epsilon_over_kb=119.8 K, sigma=3.405e-10 m"""
 
@@ -27,11 +25,15 @@ class Simulation():
 			self.unitless_density = unitless_density
 		self.box_size = (self.particles / self.unitless_density) ** (1/self.dimension)
 
-		self.end_time = end_time / np.sqrt(particle_mass * sigma ** 2 / (epsilon_over_kb * self.kb))
 		self.time_step = time_step  # is already dimensioinless, it is the h
 		self.steps_between_writing = steps_between_writing
 
-		self.max_timesteps = np.ceil(self.end_time / self.time_step - 1).astype(int)
+		if end_time is None:
+			self.max_timesteps = steps
+			self.end_time = self.max_timesteps * self.time_step
+		else:
+			self.end_time = end_time / np.sqrt(particle_mass * sigma ** 2 / (epsilon_over_kb * self.kb))
+			self.max_timesteps = np.ceil(self.end_time / self.time_step - 1).astype(int)
 
 		self.particle_mass = particle_mass
 		self.epsilon_over_kb = epsilon_over_kb
@@ -41,16 +43,10 @@ class Simulation():
 		else:
 			self.temperature = unitless_temperature
 
-		# self.force_treshold = self.particle_mass * np.mean(self.box_size) / self.time_step
-
 		# Initialize arrays
 		self.positions = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
 		# self.positions[0,::,::] = np.array([[1.5, 1.5], [3, 3], [4.3, 3], [5.6, 3], [1, 3]])[:self.particles,::]
 		self.positions[0, ::, ::] = fcc_lattice(unit_cells=self.unit_cells_along_axis, atom_spacing=self.box_size / (2 * self.unit_cells_along_axis))
-		# x = np.linspace(0, self.box_size[0], int(self.particles**(1/self.dimension)))
-		# for i, y in enumerate(x):
-		#	for j, z in enumerate(x):
-		#		self.positions[0, i*x.size+j, ::] = (y,z)
 
 		self.velocities = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
 		self.velocities[0, :, :] = initialize_maxwellian_velocities(self.temperature, self.particles, self.dimension)
@@ -91,9 +87,6 @@ class Simulation():
 
 	def run_sim(self) -> None:
 		""""""
-		# We don't want to calculate the last time index plus one! So end it one early.
-
-
 		self.forces = np.zeros(shape=(2, self.particles, self.dimension))
 
 		self.thermalize()
@@ -113,7 +106,7 @@ class Simulation():
 			self.velocities[0:2, ::, ::] = self.velocities[maxtime:maxtime + 2, ::, ::]
 			self.potential_energy[0:2, ::] = self.potential_energy[maxtime:maxtime + 2, ::]
 
-	def thermalize(self, steps=500, treshold_percentage = 0.1):
+	def thermalize(self, steps=100, treshold_percentage=0.1):
 		# It should not be necessary to thermalize longer than this as steps_between_writing can be quite large
 		assert steps <= self.steps_between_writing
 		velocity_rescaler = 0
@@ -130,17 +123,18 @@ class Simulation():
 			self.potential_energy[0, ::] = self.potential_energy[steps, ::]
 
 
-
 	def run_for_steps(self, steps):
 		for time_index in np.arange(1, steps, dtype=int):
 			self.update_verlet(time_index)
-			#self.positions[time_index + 1] = apply_periodic_boundaries(self.positions[time_index + 1], self.box_size)
-
 
 
 	def update_euler(self, time_index) -> None:
 		# Calc new positions
-		self.positions[time_index + 1] = apply_periodic_boundaries(self.positions[time_index] + self.velocities[time_index] * self.time_step, self.box_size)
+		self.positions[time_index + 1] = apply_periodic_boundaries(
+			self.positions[time_index]
+			+ self.velocities[time_index] * self.time_step
+			, self.box_size
+		)
 
 		# Calc new velocities
 		distance_vectors = get_distance_vectors(self.positions[time_index], self.box_size, self.dimension)
@@ -151,10 +145,15 @@ class Simulation():
 		distances = sum_squared(get_distance_vectors(self.positions[time_index], self.box_size, self.dimension))
 		self.potential_energy[time_index] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
 
+
 	def update_verlet(self, time_index) -> None:
 		# Calc new positions
-		self.positions[time_index + 1] = apply_periodic_boundaries(self.positions[time_index] + self.velocities[
-			time_index] * self.time_step + self.time_step ** 2 / 2 * self.forces[1], self.box_size)
+		self.positions[time_index + 1] = apply_periodic_boundaries(
+			self.positions[time_index]
+			+ self.velocities[time_index] * self.time_step
+			+ self.time_step ** 2 / 2 * self.forces[1]
+			, self.box_size
+		)
 
 		# Calc new force
 		distance_vectors = get_distance_vectors(self.positions[time_index + 1], self.box_size, self.dimension)
@@ -171,12 +170,4 @@ class Simulation():
 
 
 if __name__ == "__main__":
-	import matplotlib.pyplot as plt
-
-	sim = Simulation(2, 2, box_size=1e-9, time_step=1e-3, end_time=1e-11)
-	points = int(1e5)
-	x = np.linspace(-1e1, 1e1, points).reshape((1, points, 1))
-	print(sim.box_size / sim.time_step)
-	plt.plot(x.flatten(), sim.force(x) / sim.particle_mass * sim.time_step)
-	plt.ylim(-0.000003, 0.000003)
-	plt.show()
+	pass
