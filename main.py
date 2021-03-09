@@ -7,14 +7,14 @@ from src.process_results import *
 import numpy as np
 
 
-def run_simulation(unitless_density = 0.8, unitless_temperature = 3.0, timestep = 1e-2, steps = 1000, unit_cells=3) -> None:
+def run_simulation(unitless_density = 0.8, unitless_temperature = 3.0, timestep = 1e-2, steps = 1000, unit_cells=3, verbosity=1) -> None:
     sim = Simulation(
         unit_cells_along_axis=unit_cells,
         unitless_density=unitless_density,
         unitless_temperature=unitless_temperature,
         steps=steps,
         time_step=timestep,
-        verbosity=1
+        verbosity=verbosity
     )
     sim.run_sim()
 
