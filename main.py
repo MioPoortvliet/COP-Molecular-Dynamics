@@ -7,7 +7,7 @@ from src.process_results import *
 import numpy as np
 
 
-def run_simulation(unitless_density = 0.8, unitless_temperature = 3.0, timestep = 1e-2, steps = 1000, unit_cells=3, verbosity=1) -> None:
+def run_simulation(unitless_density = 1, unitless_temperature = 4, timestep = 1e-2, steps = 10000, unit_cells=3, verbosity=1) -> None:
     sim = Simulation(
         unit_cells_along_axis=unit_cells,
         unitless_density=unitless_density,
@@ -30,8 +30,8 @@ def from_existing_data(fpath) -> None:
     plot_correlation_function(*correlation_function(positions, box_length=properties["box_size"]), properties)
     unitless_pressure = pressure_over_rho(positions) * properties["unitless_density"]
 
-    plot_positions(positions, velocities)
-    plot_energies(.5 * np.sum(velocities ** 2, axis=-1), potential_energy)
+    #plot_positions(positions, velocities)
+    #plot_energies(.5 * np.sum(velocities ** 2, axis=-1), potential_energy)
     #ani = Animation(positions, .5 * np.sum(velocities ** 2, axis=-1), potential_energy, box_size=properties["box_size"], dimension=3, frameskip=10)
     #ani.run()
 
@@ -68,7 +68,7 @@ def run_statistics(unitless_density, unitless_temperature, N):
     print(f"Unitless pressure: {np.mean(unitless_pressure)} +/- {np.std(unitless_pressure, ddof=1)}")
     plot_correlation_function(np.mean(correlation_function_data_array, axis=0), distance, properties)
 
-    return np.mean(unitless_pressure)
+    return np.mean(unitless_pressure), np.std(unitless_pressure, ddof=1)
 
 
 def calc_pressure(unitless_density, unitless_temperature, steps=100) -> np.float:
@@ -84,7 +84,7 @@ def calc_pressure(unitless_density, unitless_temperature, steps=100) -> np.float
     return pressure_over_rho(positions) * unitless_density, fpath
 
 
-def density_temp_plot(temprange, densityrange):
+def calc_pressure_for_rhoT(temprange, densityrange):
     paths = []
     pressure = np.zeros(shape=(temprange.size, densityrange.size))
     for i, T in enumerate(temprange):
@@ -100,10 +100,10 @@ def density_temp_plot(temprange, densityrange):
     #np.save("data/pressure/rhorange.npy", densityrange)
 
 
-    #rhoT_plot(pressure, temprange, densityrange)
+    rhoT_plot(pressure, temprange, densityrange)
 
 
-def load_density_data():
+def plot_rhoT_from_file():
     pressure = np.load("data/pressure/pressure.npy")
     temprange = np.load("data/pressure/temprange.npy")
     densityrange = np.load("data/pressure/rhorange.npy")
@@ -114,8 +114,8 @@ def load_density_data():
 
 
 if __name__ == "__main__":
-    #fpath = run_simulation()
-    #from_existing_data(fpath)
-    resolution = 2 # total resolution is this number squared!
-    density_temp_plot(temprange=np.linspace(0, 3, resolution), densityrange=np.linspace(0.01, 1.4, resolution)[::-1])
-    load_density_data()
+    fpath = run_simulation()
+    from_existing_data(fpath)
+    #resolution = 10 # total resolution is this number squared!
+    #calc_pressure_for_rhoT(temprange=np.linspace(2.5, 3.5, resolution), densityrange=np.linspace(0.5, 1.4, resolution)[::-1])
+    #plot_rhoT_from_file()

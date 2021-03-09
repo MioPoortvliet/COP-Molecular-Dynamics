@@ -6,7 +6,7 @@ from src.physics import *
 def correlation_function(array, box_length) -> np.array:
 	time_steps, particles, dimension = array.shape
 
-	distance = np.linspace(0.00001*box_length, box_length/2 * np.sqrt(dimension), 1000)
+	distance = np.linspace(0.00001*box_length, box_length/2 * np.sqrt(dimension), 300)
 	delta_r = distance[1]-distance[0]
 
 	average_distance_frequency = np.zeros(distance.size-1)
@@ -16,7 +16,7 @@ def correlation_function(array, box_length) -> np.array:
 	# Divide by samples to get average
 	average_distance_frequency /= time_steps
 
-	pair_correlation_function = 2 * box_length**dimension / (particles * (particles-1)) * average_distance_frequency / (4 * np.pi * distance[:-1]**2 * delta_r)
+	pair_correlation_function = 2 * box_length**dimension / (particles * (particles-1)) * average_distance_frequency / (4 * np.pi * distance[1:]**2 * delta_r)
 
 	return pair_correlation_function, distance[:-1]
 

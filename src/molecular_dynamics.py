@@ -37,14 +37,14 @@ class Simulation():
 		self.dimension = 3
 		self.particles = 4 * unit_cells_along_axis ** self.dimension  # int(particles)
 		if unitless_density is None:
-			self.unitless_density = density * sigma**self.dimension
+			self.density = density * sigma**self.dimension
 		else:
-			self.unitless_density = unitless_density
+			self.density = unitless_density
 
-		if self.unitless_density > 1.5:
+		if self.density > 1.5:
 			warnings.warn("Density is so high that the simulation might fail to thermalize.")
 
-		self.box_size = (self.particles / self.unitless_density) ** (1/self.dimension)
+		self.box_size = (self.particles / self.density) ** (1/self.dimension)
 
 		self.time_step = time_step  # is already dimensioinless, it is the h
 		self.steps_between_writing = steps_between_writing
@@ -96,7 +96,7 @@ class Simulation():
 		header["epsilon_over_kb"] = float(self.epsilon_over_kb)
 		header["sigma"] = float(self.sigma)
 		header["kb"] = float(self.kb)
-		header["unitless_density"] = float(self.unitless_density)
+		header["unitless_density"] = float(self.density)
 		header["unitless_temperature"] = float(self.temperature)
 		header["box_size"] = float(self.box_size)
 
