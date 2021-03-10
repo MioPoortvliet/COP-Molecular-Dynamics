@@ -12,6 +12,7 @@ import matplotlib.animation as animation
 import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from matplotlib import colors
+from src.process_results import *
 
 
 class Animation:
@@ -28,7 +29,11 @@ class Animation:
         self.ke = np.sum(kinetic_energy, axis=-1)
         self.pe = np.sum(potential_energy, axis=-1)
         self.te = self.ke + self.pe
-
+        
+        self.pressure = np.zeros(shape=positions.shape[0])
+        for i in np.arange(positions.shape[0]):
+            self.pressure[i] = pressure_over_rho(positions[i,:].reshape((1,*positions.shape[1:]))) #* properties["unitless_density"]
+        
         if type(box_size) in (int, float):
             self.box_size = np.repeat(box_size, dimension)
         else:
@@ -36,7 +41,7 @@ class Animation:
             self.box_size = box_size
         
         self.fig = plt.figure()
-        self.gs = gridspec.GridSpec(2,6)
+        self.gs = gridspec.GridSpec(4,6)
 
         if self.dimension == 2:
             self.ax = self.fig.add_subplot(self.gs[:,:-2])
@@ -63,9 +68,9 @@ class Animation:
         self.ax.set_ylabel('Y')
         self.ax.set_title('Molecular dynamics')
         
-        self.tail_length = 10
+        self.tail_length = 3
         
-        self.ax_energy = self.fig.add_subplot(self.gs[0,-2:])
+        self.ax_energy = self.fig.add_subplot(self.gs[0:2,-2:])
         self.ax_energy.set_title('Energy')
         self.ax_energy.set_xlim(0,len(self.ke))
         self.ax_energy.set_ylim((np.amin([self.ke,self.pe])),(np.amax([self.ke, self.pe])))
@@ -74,8 +79,12 @@ class Animation:
         self.line_te, = self.ax_energy.plot([],[], label="te")
         self.ax_energy.legend()
         
-        self.ax_temp   = self.fig.add_subplot(self.gs[1,-2:])
-        self.ax_temp.set_title('Temperature')
+        self.ax_pressure   = self.fig.add_subplot(self.gs[2,-2:])
+        self.ax_pressure.set_title('Pressure over density')
+        self.ax_pressure.set_xlim(0,len(self.pressure))
+        self.ax_pressure.set_ylim((np.amin(self.pressure)),(np.amax(self.pressure)))
+        self.line_pressure, = self.ax_pressure.plot([],[], label="pressure")
+    
 
     def run(self):
         if self.dimension == 2:
@@ -91,13 +100,14 @@ class Animation:
         self.time_index += self.frameskip
         for j, self.scat in enumerate(self.scats):
             if self.time_index<self.tail_length*self.frameskip:
-                self.scat._offsets = (self.positions[:self.time_index,j,0:2])
+                self.scat._offsets = (self.positions[:self.time_index+1,j,0:2])
                 self.scat.set_sizes(np.linspace(0,4,num=self.time_index, dtype=float))
             else:
-                self.scat._offsets = (self.positions[self.time_index-self.tail_length*self.frameskip:self.time_index,j,0:2])
+                self.scat._offsets = (self.positions[self.time_index+1-self.tail_length*self.frameskip:self.time_index+1,j,0:2])
                 self.scat.set_sizes(np.linspace(0,4,num=self.tail_length*self.frameskip, dtype=float))
         # self.scat._offsets = self.positions[self.time_index,::,::]
         self.update_energy(self.time_index)
+        self.update_pressure(self.time_index)
         self.time_text.set_text('frame = %.1f' % self.time_index)
 
     
@@ -105,19 +115,23 @@ class Animation:
         self.time_index += self.frameskip
         for j, self.scat in enumerate(self.scats):
             if self.time_index<self.tail_length*self.frameskip:
-                self.scat._offsets3d = (self.positions[:self.time_index,j,0], self.positions[:self.time_index,j,1], self.positions[:self.time_index,j,2])
+                self.scat._offsets3d = (self.positions[:self.time_index+1,j,0], self.positions[:self.time_index+1,j,1], self.positions[:self.time_index+1,j,2])
                 self.scat.set_sizes(np.linspace(0,4,num=self.time_index, dtype=float))
             else:
-                self.scat._offsets3d = (self.positions[self.time_index-self.tail_length*self.frameskip:self.time_index,j,0], self.positions[self.time_index-self.tail_length*self.frameskip:self.time_index,j,1], self.positions[self.time_index-self.tail_length*self.frameskip:self.time_index,j,2])
+                self.scat._offsets3d = (self.positions[self.time_index+1-self.tail_length*self.frameskip:self.time_index+1,j,0], self.positions[self.time_index+1-self.tail_length*self.frameskip:self.time_index+1,j,1], self.positions[self.time_index+1-self.tail_length*self.frameskip:self.time_index+1,j,2])
                 self.scat.set_sizes(np.linspace(0,4,num=self.tail_length*self.frameskip, dtype=float))
         # self.scat._offsets3d = (self.positions[self.time_index,::,0], self.positions[self.time_index,::,1], self.positions[self.time_index,::,2])
         self.update_energy(self.time_index)
+        self.update_pressure(self.time_index)
         self.time_text.set_text('frame = %.1f' % self.time_index)
 
     def update_energy(self, i):
         self.line_ke.set_data(np.arange(i), self.ke[:i])
         self.line_pe.set_data(np.arange(i), self.pe[:i])
         self.line_te.set_data(np.arange(i), self.te[:i])
+    
+    def update_pressure(self, i):
+        self.line_pressure.set_data(np.arange(i), self.pressure[:i])
 """"
     maybe we should consider running the aimation during the simulation.
     Then we do not need to save all data, and we can save time/space for larger simulations
