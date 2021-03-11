@@ -7,7 +7,7 @@ from src.process_results import *
 import numpy as np
 
 
-def run_simulation(unitless_density = 1.2, unitless_temperature = .5, timestep = 1e-2, steps = 10000, unit_cells=3, verbosity=1) -> None:
+def run_simulation(unitless_density = 1.2, unitless_temperature = .5, timestep = 1e-2, steps = 30000, unit_cells=3, verbosity=1) -> None:
     sim = Simulation(
         unit_cells_along_axis=unit_cells,
         unitless_density=unitless_density,
@@ -27,13 +27,13 @@ def from_existing_data(fpath) -> None:
     velocities = load_and_concat(fpath, "velocities")
     potential_energy = load_and_concat(fpath, "potential_energy")
 
-    # plot_correlation_function(*correlation_function(positions, box_length=properties["box_size"]), properties)
-    # unitless_pressure = pressure_over_rho(positions) * properties["unitless_density"]
+    #plot_correlation_function(*correlation_function(positions, box_length=properties["box_size"]), properties)
+    unitless_pressure = pressure_over_rho(positions) * properties["unitless_density"]
 
     #plot_positions(positions, velocities)
-    #plot_energies(.5 * np.sum(velocities ** 2, axis=-1), potential_energy)
-    ani = Animation(positions, .5 * np.sum(velocities ** 2, axis=-1), potential_energy, box_size=properties["box_size"], dimension=3, frameskip=10)
-    ani.run()
+    plot_energies(.5 * np.sum(velocities ** 2, axis=-1), potential_energy)
+    #ani = Animation(positions, .5 * np.sum(velocities ** 2, axis=-1), potential_energy, box_size=properties["box_size"], dimension=3, frameskip=10)
+    #ani.run()
 
 
 def run_statistics(unitless_density, unitless_temperature, N):

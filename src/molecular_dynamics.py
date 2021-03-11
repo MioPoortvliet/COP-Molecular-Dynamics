@@ -130,7 +130,7 @@ class Simulation():
 			self.run_for_steps(maxtime)
 
 			# Append data to file
-			self.print_(1, f"Writing {maxtime+1}/{self.max_timesteps} steps to {self.fpath}.")
+			self.print_(1, f"Writing {(maxtime+1)*(cycle+1)}/{self.max_timesteps} steps to {self.fpath}")
 			to_file(self.fpath_positions + str(cycle), self.positions[:maxtime])
 			to_file(self.fpath_velocities + str(cycle), self.velocities[:maxtime])
 			to_file(self.fpath_potential_energy + str(cycle), self.potential_energy[:maxtime])
@@ -138,7 +138,7 @@ class Simulation():
 			# Reset arrays
 			self.positions[0:2, ::, ::] = self.positions[maxtime:maxtime + 2, ::, ::]
 			self.velocities[0:2, ::, ::] = self.velocities[maxtime:maxtime + 2, ::, ::]
-			self.potential_energy[0:2, ::] = self.potential_energy[maxtime:maxtime + 2, ::]
+			self.potential_energy[0:2, ::] = self.potential_energy[maxtime:maxtime+2, ::]
 
 		self.print_(1, f"\nDone! Output to {self.fpath}. \n")
 
@@ -183,8 +183,8 @@ class Simulation():
 		self.velocities[time_index + 1] = self.velocities[time_index] + self.forces[1] * self.time_step
 
 		# Calculate potential energy
-		distances = sum_squared(get_distance_vectors(self.positions[time_index], self.box_size, self.dimension))
-		self.potential_energy[time_index] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
+		distances = sum_squared(get_distance_vectors(self.positions[time_index+1], self.box_size, self.dimension))
+		self.potential_energy[time_index+1] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
 
 
 	def update_verlet(self, time_index) -> None:
@@ -205,8 +205,8 @@ class Simulation():
 		self.velocities[time_index + 1] = self.velocities[time_index] + self.time_step / 2 * np.sum(self.forces, axis=0)
 
 		# Calculate potential energy
-		distances = sum_squared(get_distance_vectors(self.positions[time_index], self.box_size, self.dimension))
-		self.potential_energy[time_index] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
+		distances = sum_squared(get_distance_vectors(self.positions[time_index+1], self.box_size, self.dimension))
+		self.potential_energy[time_index+1] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
 
 
 
