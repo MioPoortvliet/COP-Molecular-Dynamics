@@ -7,7 +7,7 @@ from src.process_results import *
 import numpy as np
 
 
-def run_simulation(unitless_density = 1.2, unitless_temperature = .5, timestep = 1e-2, steps = 30000, unit_cells=3, verbosity=1) -> None:
+def run_simulation(unitless_density = 1, unitless_temperature = 3, timestep = 1e-2, steps = 1000, unit_cells=3, verbosity=1) -> None:
     sim = Simulation(
         unit_cells_along_axis=unit_cells,
         unitless_density=unitless_density,
@@ -27,8 +27,9 @@ def from_existing_data(fpath) -> None:
     velocities = load_and_concat(fpath, "velocities")
     potential_energy = load_and_concat(fpath, "potential_energy")
 
-    #plot_correlation_function(*correlation_function(positions, box_length=properties["box_size"]), properties)
+    plot_correlation_function(*correlation_function(positions, box_length=properties["box_size"]), properties)
     unitless_pressure = pressure_over_rho(positions) * properties["unitless_density"]
+    print(unitless_pressure)
 
     #plot_positions(positions, velocities)
     plot_energies(.5 * np.sum(velocities ** 2, axis=-1), potential_energy)
@@ -115,6 +116,7 @@ def plot_rhoT_from_file():
 
 if __name__ == "__main__":
     fpath = run_simulation()
+    #fpath = "data/2021-03-12T11-49-31.663767/"
     from_existing_data(fpath)
     #resolution = 10 # total resolution is this number squared!
     #calc_pressure_for_rhoT(temprange=np.linspace(2.5, 3.5, resolution), densityrange=np.linspace(0.5, 1.4, resolution)[::-1])
