@@ -78,13 +78,26 @@ class Simulation():
 		self.print_(2, f"Files will be output to {self.fpath}.\n")
 
 
-	def print_(self, level, *args, **kwargs):
+	def print_(self, level:int, *args, **kwargs):
+		"""
+		Just a function to control the verbosity of print statements. Sometimes you want to print less, sometimes more.
+		:param level: Verbosity level, compared to what is set in self.verbosity
+		:type level: int
+		:param args: goes to print()
+		:param kwargs: goes to print()
+		:return: None
+		:rtype: None
+		"""
 		if self.verbosity >= level:
 			print(*args, **kwargs)
 
 
-	def write_header_file(self):
-		"""This function writes all used parameters to a 'header file' in the output dir."""
+	def write_header_file(self) -> None:
+		"""
+		This function writes all used parameters to a header file '00-header.json' in the output dir.
+		:return: None
+		:rtype: None
+		"""
 		header = {}
 		header["particles"] = int(self.particles)
 		header["dimension"] = int(self.dimension)
@@ -104,7 +117,16 @@ class Simulation():
 			json.dump(header, file)
 
 
-	def make_file_structure(self, fpath):
+	def make_file_structure(self, fpath:str) -> None:
+		"""
+		Creates directories and sets up filenames to be used when writing data later.
+
+		:param fpath: filepath root where the structure should be created
+		:type fpath: str
+		:return: None
+		:rtype: None
+		"""
+		# Path is determined by the current datetime, removing illegal characters
 		self.fpath = fpath + datetime.today().isoformat().replace(":", "-") + "/"
 
 		ensure_dir(self.fpath)
@@ -115,15 +137,26 @@ class Simulation():
 
 
 	def run_sim(self) -> None:
-		"""Function to be called after setting up the simulation, this starts the calculation."""
+		"""
+		Function to be called after setting up the simulation, this starts the calculation.
+		:return: None
+		:rtype: None
+		"""
+
 		self.forces = np.zeros(shape=(2, self.particles, self.dimension))
 
 		# If the temperature is zero there is nothing to thermalize, it is all not moving.
 		if self.temperature != 0:
 			self.thermalize()
+		else:
+			self.update_euler(0)
+			distance_vectors = get_distance_vectors(self.positions[0], self.box_size, self.dimension)
+			distances = sum_squared(distance_vectors)
+			self.potential_energy[0,::,::] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
+			del distances, distance_vectors
 
 		# We need to calculate one step to be able to use verlet
-		self.update_euler(0)
+		# Because we thermalized, we already calculated everything for the first two steps
 		for cycle in np.arange(np.ceil(self.max_timesteps / self.steps_between_writing), dtype=np.int):
 			maxtime = min(self.max_timesteps - cycle * self.steps_between_writing, self.steps_between_writing - 1)
 			self.print_(2, f"Simulating {maxtime} steps...")
@@ -143,33 +176,67 @@ class Simulation():
 		self.print_(1, f"\nDone! Output to {self.fpath}. \n")
 
 
-	def thermalize(self, steps=100, treshold_percentage=0.15) -> None:
+	def thermalize(self, steps=100, treshold=0.05) -> None:
+		"""
+		Makes sure the kinetic energy of the system compared to the expected thermal energy is within the set treshold.
+
+		:param steps: Number of steps to calculate between re-normalizing the velocities
+		:type steps: int
+		:param treshold: The maximum allowable relative error between the kinetic energy and expected thermal energy
+		:type treshold: float
+		:return: None
+		:rtype: None
+		"""
 		# It should not be necessary to thermalize longer than this as steps_between_writing can be quite large
-		assert steps <= self.steps_between_writing
+		# If the array is not large enough to contain these steps throw an error!
+		if steps > self.steps_between_writing:
+			raise ValueError("Can not store the steps needed to thermalize, either increase the steps between writing or decrease the steps in the thermalization.")
+
 		self.print_(2, "Starting thermalization.")
 
 		velocity_rescaler = 0
-		while np.abs(velocity_rescaler - 1) > treshold_percentage:
+		while np.abs(velocity_rescaler - 1) > treshold:
+			# Need some way to propegate with one timestep of initial conditions
 			self.update_euler(0)
+
 			self.run_for_steps(steps)
 
-			# Reset array and keep last values
-			self.positions[0, ::, ::] = self.positions[steps,::, ::]
 			velocity_rescaler = np.sqrt((self.particles-1)*self.dimension*self.temperature/np.sum(self.velocities[steps,::,::]**2))
-			self.velocities[0, ::, ::] = velocity_rescaler*self.velocities[steps,::, ::]
-			self.potential_energy[0, ::] = self.potential_energy[steps, ::]
 
-			self.print_(1, f"Thermalization stops if {abs(velocity_rescaler - 1):1.3f} <= {treshold_percentage}.")
+			# Reset array and keep last values
+			self.positions[0:2, ::, ::] = self.positions[steps-1:steps+1,::, ::]
+			self.velocities[0:2, ::, ::] = velocity_rescaler*self.velocities[steps-1:steps+1,::, ::]
+			self.potential_energy[0:2, ::] = self.potential_energy[steps-1:steps+1, ::]
+
+			self.print_(1, f"Thermalization stops if {abs(velocity_rescaler - 1):1.3f} <= {treshold}.")
+
+			# If the density is too high, numerical errors do not allow this process to function.
 			assert velocity_rescaler > 1e-10
 
 
 
-	def run_for_steps(self, steps) -> None:
+	def run_for_steps(self, steps: int) -> None:
+		"""
+		Run simulation for steps timesteps.
+
+		:param steps: Number of steps to run
+		:type steps: int
+		:return: None
+		:rtype: None
+		"""
 		for time_index in np.arange(1, steps, dtype=int):
 			self.update_verlet(time_index)
 
 
-	def update_euler(self, time_index) -> None:
+	def update_euler(self, time_index: int) -> None:
+		"""
+		Calculate forwards in time using the Euler alogrithm
+
+		:param time_index: timestep to calculate from
+		:type time_index: int
+		:return: None
+		:rtype: None
+		"""
 		# Calc new positions
 		self.positions[time_index + 1] = apply_periodic_boundaries(
 			self.positions[time_index]
@@ -178,16 +245,24 @@ class Simulation():
 		)
 
 		# Calc new velocities
-		distance_vectors = get_distance_vectors(self.positions[time_index], self.box_size, self.dimension)
-		self.forces[1] = force(distance_vectors)
+		distance_vectors = get_distance_vectors(self.positions[time_index+1], self.box_size, self.dimension)
+		distances = sum_squared(distance_vectors)
+
+		self.forces[1] = force(distance_vectors, distances)
 		self.velocities[time_index + 1] = self.velocities[time_index] + self.forces[1] * self.time_step
 
 		# Calculate potential energy
-		distances = sum_squared(get_distance_vectors(self.positions[time_index+1], self.box_size, self.dimension))
 		self.potential_energy[time_index+1] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
 
 
-	def update_verlet(self, time_index) -> None:
+	def update_verlet(self, time_index: int) -> None:
+		"""
+		Calculate forwards in time using the Verlet velocity algorithm
+		:param time_index: timestep to calculate from
+		:type time_index: int
+		:return: None
+		:rtype: None
+		"""
 		# Calc new positions
 		self.positions[time_index + 1] = apply_periodic_boundaries(
 			self.positions[time_index]
@@ -198,14 +273,14 @@ class Simulation():
 
 		# Calc new force
 		distance_vectors = get_distance_vectors(self.positions[time_index + 1], self.box_size, self.dimension)
+		distances = sum_squared(distance_vectors)
 		self.forces[0] = self.forces[1]
-		self.forces[1] = force(distance_vectors)
+		self.forces[1] = force(distance_vectors, distances)
 
 		# Calc new velocities
 		self.velocities[time_index + 1] = self.velocities[time_index] + self.time_step / 2 * np.sum(self.forces, axis=0)
 
 		# Calculate potential energy
-		distances = sum_squared(get_distance_vectors(self.positions[time_index+1], self.box_size, self.dimension))
 		self.potential_energy[time_index+1] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
 
 

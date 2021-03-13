@@ -7,14 +7,15 @@ from src.process_results import *
 import numpy as np
 
 
-def run_simulation(unitless_density = 1, unitless_temperature = 3, timestep = 1e-2, steps = 1000, unit_cells=3, verbosity=1) -> None:
+def run_simulation(unitless_density = 1, unitless_temperature = 3, timestep = 1e-2, steps = 500000, unit_cells=3, verbosity=1) -> None:
     sim = Simulation(
         unit_cells_along_axis=unit_cells,
         unitless_density=unitless_density,
         unitless_temperature=unitless_temperature,
         steps=steps,
         time_step=timestep,
-        verbosity=verbosity
+        verbosity=verbosity,
+        steps_between_writing=10000
     )
     sim.run_sim()
 
@@ -27,9 +28,9 @@ def from_existing_data(fpath) -> None:
     velocities = load_and_concat(fpath, "velocities")
     potential_energy = load_and_concat(fpath, "potential_energy")
 
-    plot_correlation_function(*correlation_function(positions, box_length=properties["box_size"]), properties)
-    unitless_pressure = pressure_over_rho(positions) * properties["unitless_density"]
-    print(unitless_pressure)
+    #plot_correlation_function(*correlation_function(positions, box_length=properties["box_size"]), properties)
+    #unitless_pressure = pressure_over_rho(positions) * properties["unitless_density"]
+    #print(unitless_pressure)
 
     #plot_positions(positions, velocities)
     plot_energies(.5 * np.sum(velocities ** 2, axis=-1), potential_energy)
