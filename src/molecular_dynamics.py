@@ -26,16 +26,48 @@ class Simulation():
 			fpath="data/",
 			verbosity=1
 	) -> None:
-		"""todo particle mass: 6.6335e-26 kg epsilon_over_kb=119.8 K, sigma=3.405e-10 m"""
+		"""
+		Initialize the simulation class. Stores all variables and sets the simulation up to be able to run.
+
+		:param end_time: Time in seconds to end the simulation at
+		:type end_time: float
+		:param steps: Maximum steps to calulate, use instead of end_time
+		:type steps: int
+		:param density: Density in kg/m^3
+		:type density: float
+		:param unitless_density: Unitless density, use instead of density
+		:type unitless_density: float
+		:param temperature: Temperature in Kelvin
+		:type temperature: float
+		:param unitless_temperature: Unitless temperature, use instead of temperature
+		:type unitless_temperature: float
+		:param time_step: unitless timestep size, should be around 1e-2 or smaller
+		:type time_step: float
+		:param unit_cells_along_axis: number of unit cells to create along an axis
+		:type unit_cells_along_axis: int
+		:param particle_mass: mass of the particles
+		:type particle_mass: float
+		:param epsilon_over_kb: interaction strength over Boltzman's constant
+		:type epsilon_over_kb: float
+		:param sigma: characteristic length
+		:type sigma: float
+		:param steps_between_writing: after this many steps the simulation writes the data to file
+		:type steps_between_writing: int
+		:param fpath: root directory of where to save the simulation results
+		:type fpath: str
+		:param verbosity: a number from 0 to 3 controlling how explicit the program prints what it's doing.
+		:type verbosity: int
+		"""
 		self.verbosity = verbosity
 		self.print_(1, "Initializing...")
+
 		# Store constants
 		self.kb = 1.38e-23
 
 		self.unit_cells_along_axis = unit_cells_along_axis
-
 		self.dimension = 3
 		self.particles = 4 * unit_cells_along_axis ** self.dimension  # int(particles)
+
 		if unitless_density is None:
 			self.density = density * sigma**self.dimension
 		else:

@@ -4,6 +4,13 @@ import matplotlib.pyplot as plt
 from scipy.spatial import distance_matrix
 
 def sum_squared(arr) -> np.ndarray:
+	"""
+	Returns the square root of the sum of the elements squared along the last axis.
+	:param arr: array where the sum should be computed over
+	:type arr: np.ndarray
+	:return: square root of sum over squared elements along last axis
+	:rtype: np.ndarray
+	"""
 	return np.sqrt(np.sum(arr ** 2, axis=-1))
 
 
@@ -26,14 +33,16 @@ def apply_periodic_boundaries(positions, period) -> np.ndarray:
 	return np.mod(positions, period)
 
 
-def distance_hist_old(array, bins, period) -> np.array:
-	distances = sum_squared(get_distance_vectors(array, period, array.shape[-1]))
-	print(distances)
-	hist, _ = np.histogram(distances.flatten(), bins=bins)
-	return hist
-
-
 def distance_hist(array, bins) -> np.array:
+	"""
+
+	:param array: points wherebetween distance should be computed
+	:type array: np.ndarray
+	:param bins: bins to make hist
+	:type bins: np.array
+	:return: array of histogram data
+	:rtype: np.array
+	"""
 	distances = distance_matrix(array, array)
 	hist, _ = np.histogram(distances.flatten(), bins=bins)
 	return hist
