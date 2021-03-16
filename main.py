@@ -7,7 +7,7 @@ from src.process_results import *
 import numpy as np
 
 
-def run_simulation(unitless_density = 1, unitless_temperature = 3, timestep = 1e-2, steps = 500000, unit_cells=3, verbosity=1) -> None:
+def run_simulation(unitless_density = 1, unitless_temperature = 1, timestep = 1e-2, steps = 10000, unit_cells=3, verbosity=1) -> None:
     sim = Simulation(
         unit_cells_along_axis=unit_cells,
         unitless_density=unitless_density,
@@ -15,7 +15,7 @@ def run_simulation(unitless_density = 1, unitless_temperature = 3, timestep = 1e
         steps=steps,
         time_step=timestep,
         verbosity=verbosity,
-        steps_between_writing=10000
+        steps_between_writing=5000
     )
     sim.run_sim()
 

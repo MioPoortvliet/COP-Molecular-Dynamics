@@ -1,7 +1,7 @@
 import numpy as np
 from src.utils import *
 
-
+@njit()
 def force(distance_vectors:np.ndarray, distances:np.ndarray) -> np.ndarray:
 	"""
 	put in distances for every particle, four nearest neighbours with x, y, z components. shape = (particles-1, particles, dimensions)
