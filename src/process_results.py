@@ -1,6 +1,7 @@
 import numpy as np
 from src.math_utils import *
 from src.physics import *
+from typing import Tuple
 
 
 def correlation_function(array: np.ndarray, max_length: float) -> (np.ndarray, np.ndarray):
@@ -47,7 +48,7 @@ def pressure_sum(positions: np.ndarray) -> np.ndarray:
 	return np.sum(distances[np.triu_indices_from(distances, 1)] * dau_U)
 
 
-def pressure_over_rho(array: np.ndarray) -> float:
+def pressure_over_rho(array: np.ndarray) -> Tuple[float, float]:
 	"""
 	Calculates the pressure divided by rho
 	:param array: positions
@@ -58,11 +59,11 @@ def pressure_over_rho(array: np.ndarray) -> float:
 	particles = array.shape[1]
 	time_steps = array.shape[0]
 
-	mean_sum_term = 0
-	for row in array:
-		mean_sum_term += pressure_sum(row)
+	sum_term = np.zeros(time_steps)
+	for tstep, row in enumerate(array):
+		sum_term[tstep] = pressure_sum(row)
 
-	# Divide by samples to get average
-	mean_sum_term /= time_steps
+	pressure_array = 1 - 1/(3*particles)*sum_term / 2
+	print(pressure_array.mean())
 
-	return 1 - 1/(3*particles)*mean_sum_term / 2
+	return pressure_array.mean(), pressure_array.std(ddof=1)

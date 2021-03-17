@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 
-from src.utils import N_runs, pressure_and_correlation_function
+from src.utils import N_runs, pressure_fpaths, correlation_function_fpaths
 
 
 def run_statistics(
@@ -27,4 +27,5 @@ def run_statistics(
 
 if __name__ == "__main__":
 	paths = run_statistics(unitless_density=1, unitless_temperature=1, N=2, steps_per_run=2000)
-	pressure_and_correlation_function(paths, cleanup=True)
+	pressure_fpaths(paths)
+	correlation_function_fpaths(paths)

@@ -17,7 +17,7 @@ def calc_pressure_for_rhoT(temprange, densityrange, N=1) -> Tuple[np.ndarray, np
 			allpaths.extend(paths)# Calculate the unitless pressure
 			for k, path in enumerate(paths):
 				positions = load_and_concat(path, "positions")
-				pressure[i, j, k] = pressure_over_rho(positions) * rho
+				pressure[i, j, k] = pressure_over_rho(positions)[0] * rho
 
 	[del_dir(path) for path in allpaths]
 
@@ -39,7 +39,7 @@ def plot_rhoT_from_file():
 
 
 if __name__ == "__main__":
-	resolution = 10 # total resolution is this number squared!
+	resolution = 1 # total resolution is this number squared!
 	pressures, temprange, densityrange = calc_pressure_for_rhoT(
 		temprange=np.linspace(2.5, 3.5, resolution),
 		densityrange=np.linspace(0.5, 1.4, resolution)[::-1],
