@@ -1,6 +1,6 @@
 import numpy as np
 from src.IO_utils import *
-from src.utils import *
+from src.math_utils import *
 from src.physics import *
 from datetime import datetime
 import json
@@ -24,39 +24,42 @@ class Simulation():
 			sigma=3.405e-10,
 			steps_between_writing=1000,
 			fpath="data/",
-			verbosity=1
+			verbosity=1,
+			treshold=0.1
 	) -> None:
 		"""
 		Initialize the simulation class. Stores all variables and sets the simulation up to be able to run.
 
-		:param end_time: Time in seconds to end the simulation at
+		:param end_time: Time in seconds to end the simulation at.
 		:type end_time: float
-		:param steps: Maximum steps to calulate, use instead of end_time
+		:param steps: Maximum steps to calulate, use instead of end_time.
 		:type steps: int
-		:param density: Density in kg/m^3
+		:param density: Density in kg/m^3.
 		:type density: float
-		:param unitless_density: Unitless density, use instead of density
+		:param unitless_density: Unitless density, use instead of density.
 		:type unitless_density: float
-		:param temperature: Temperature in Kelvin
+		:param temperature: Temperature in Kelvin.
 		:type temperature: float
-		:param unitless_temperature: Unitless temperature, use instead of temperature
+		:param unitless_temperature: Unitless temperature, use instead of temperature.
 		:type unitless_temperature: float
-		:param time_step: unitless timestep size, should be around 1e-2 or smaller
+		:param time_step: unitless timestep size, should be around 1e-2 or smaller.
 		:type time_step: float
-		:param unit_cells_along_axis: number of unit cells to create along an axis
+		:param unit_cells_along_axis: number of unit cells to create along an axis.
 		:type unit_cells_along_axis: int
-		:param particle_mass: mass of the particles
+		:param particle_mass: mass of the particles.
 		:type particle_mass: float
-		:param epsilon_over_kb: interaction strength over Boltzman's constant
+		:param epsilon_over_kb: interaction strength over Boltzman's constant.
 		:type epsilon_over_kb: float
-		:param sigma: characteristic length
+		:param sigma: characteristic length.
 		:type sigma: float
-		:param steps_between_writing: after this many steps the simulation writes the data to file
+		:param steps_between_writing: after this many steps the simulation writes the data to file.
 		:type steps_between_writing: int
-		:param fpath: root directory of where to save the simulation results
+		:param fpath: root directory of where to save the simulation results.
 		:type fpath: str
 		:param verbosity: a number from 0 to 3 controlling how explicit the program prints what it's doing.
 		:type verbosity: int
+		:param treshold: When to stop thermalization as a relative energy difference.
+		:type treshold: float
 		"""
 		self.verbosity = verbosity
 		self.print_(1, "Initializing...")
@@ -80,13 +83,14 @@ class Simulation():
 
 		self.time_step = time_step  # is already dimensioinless, it is the h
 		self.steps_between_writing = steps_between_writing
+		self.treshold = treshold
 
 		if end_time is None:
 			self.max_timesteps = steps
 			self.end_time = self.max_timesteps * self.time_step
 		else:
 			self.end_time = end_time / np.sqrt(particle_mass * sigma ** 2 / (epsilon_over_kb * self.kb))
-			self.max_timesteps = np.ceil(self.end_time / self.time_step - 1).astype(int)
+			self.max_timesteps = np.ceil(self.end_time / self.time_step).astype(int)
 
 		self.particle_mass = particle_mass
 		self.epsilon_over_kb = epsilon_over_kb
@@ -190,8 +194,8 @@ class Simulation():
 		# We need to calculate one step to be able to use verlet
 		# Because we thermalized, we already calculated everything for the first two steps
 		for cycle in np.arange(np.ceil(self.max_timesteps / self.steps_between_writing), dtype=np.int):
-			maxtime = min(self.max_timesteps - cycle * self.steps_between_writing, self.steps_between_writing - 1)
-			self.print_(2, f"Simulating {maxtime} steps...")
+			maxtime = min(self.max_timesteps - cycle * self.steps_between_writing, self.steps_between_writing) - 1
+			self.print_(2, f"Simulating {maxtime+1} steps...")
 			self.run_for_steps(maxtime)
 
 			# Append data to file
@@ -208,7 +212,7 @@ class Simulation():
 		self.print_(1, f"\nDone! Output to {self.fpath}. \n")
 
 
-	def thermalize(self, steps=100, treshold=0.05) -> None:
+	def thermalize(self, steps=100) -> None:
 		"""
 		Makes sure the kinetic energy of the system compared to the expected thermal energy is within the set treshold.
 
@@ -227,7 +231,7 @@ class Simulation():
 		self.print_(2, "Starting thermalization.")
 
 		velocity_rescaler = 0
-		while np.abs(velocity_rescaler - 1) > treshold:
+		while np.abs(velocity_rescaler - 1) > self.treshold:
 			# Need some way to propegate with one timestep of initial conditions
 			self.update_euler(0)
 
@@ -240,7 +244,7 @@ class Simulation():
 			self.velocities[0:2, ::, ::] = velocity_rescaler*self.velocities[steps-1:steps+1,::, ::]
 			self.potential_energy[0:2, ::] = self.potential_energy[steps-1:steps+1, ::]
 
-			self.print_(1, f"Thermalization stops if {abs(velocity_rescaler - 1):1.3f} <= {treshold}.")
+			self.print_(1, f"Thermalization stops if {abs(velocity_rescaler - 1):1.3f} <= {self.treshold}.")
 
 			# If the density is too high, numerical errors do not allow this process to function.
 			assert velocity_rescaler > 1e-10

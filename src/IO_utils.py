@@ -9,7 +9,7 @@ def ensure_dir(file_path: str) -> None:
         os.makedirs(file_path)
 
 
-def del_dirs(path: str) -> None:
+def del_dir(path: str) -> None:
     """
     REMOVES SPECIFIED DIR!
     :param path: dir to be removed

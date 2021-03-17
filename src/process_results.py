@@ -1,5 +1,5 @@
 import numpy as np
-from src.utils import *
+from src.math_utils import *
 from src.physics import *
 
 

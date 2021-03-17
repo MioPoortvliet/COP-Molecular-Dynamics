@@ -1,5 +1,5 @@
 import numpy as np
-from src.utils import *
+from src.math_utils import *
 
 @njit()
 def force(distance_vectors:np.ndarray, distances:np.ndarray) -> np.ndarray:

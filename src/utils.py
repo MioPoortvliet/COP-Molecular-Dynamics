@@ -1,78 +1,80 @@
 import numpy as np
-import scipy.stats
-import matplotlib.pyplot as plt
-from scipy.spatial import distance_matrix
-from numba import njit, boolean
+import matplotlib as plt
+from src.molecular_dynamics import Simulation
+from src.IO_utils import load_json, load_and_concat, del_dir
+from src.process_results import correlation_function, pressure_over_rho
+from src.plotting_utilities import plot_correlation_function
+from typing import Tuple
+
+def N_runs(
+		N,
+		unitless_density = 1,
+		unitless_temperature = 1,
+		timestep = 1e-2,
+		steps_per_run = 1000,
+		unit_cells=3,
+		verbosity=1
+	) -> str:
+	fpaths = []
+	for i in range(N):
+		# Run simulation and store filepath of output data
+		sim = Simulation(
+			unit_cells_along_axis=unit_cells,
+			unitless_density=unitless_density,
+			unitless_temperature=unitless_temperature,
+			steps=steps_per_run,
+			time_step=timestep,
+			verbosity=verbosity,
+			steps_between_writing=1000
+		)
+		sim.run_sim()
+
+		fpaths.append(sim.fpath)
+
+	return fpaths
 
 
-def sum_squared(arr) -> np.ndarray:
-	"""
-	Returns the square root of the sum of the elements squared along the last axis.
-	:param arr: array where the sum should be computed over
-	:type arr: np.ndarray
-	:return: square root of sum over squared elements along last axis
-	:rtype: np.ndarray
-	"""
-	return np.sqrt(np.sum(arr ** 2, axis=-1))
+def pressure_and_correlation_function(paths, cleanup=False) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+	unitless_pressure = np.zeros(len(paths))
+	correlation_function_data_list = []
 
+	for i, path in enumerate(paths):
+		# Load properties of last run
+		properties = load_json(path)
+		# Load positions of last run
+		positions = load_and_concat(path, "positions")
 
+		# Use these to calculate the correlation function
+		correlation_function_data, distance = correlation_function(positions, max_length=properties["box_size"])
+		correlation_function_data_list.append(correlation_function_data)
 
-def get_distance_vectors(positions_at_time, box_size, dimension) -> np.ndarray:
-	"""Produces distances r_{ij} without r_{ii}, using minimal image convention. Takes direction into account!"""
-	distance_vectors = np.zeros(shape=(positions_at_time.shape[0] - 1, positions_at_time.shape[0], dimension))
-	# print(positions_at_time)
-	for i, position in enumerate(positions_at_time):
-		#distance_vectors[::, i, ::] = position - np.delete(positions_at_time, i, axis=0)
-		# Actually faster! Unfortunately no boolean masking using numba
-		mask = np.ones(shape=positions_at_time.shape, dtype=np.bool_)
-		mask[i, ::] = False
-		distance_vectors[::, i, ::] = positions_at_time[i, ::] - positions_at_time[mask].reshape((distance_vectors.shape[0], distance_vectors.shape[-1]))
+		# Calculate the unitless pressure
+		unitless_pressure[i] = pressure_over_rho(positions) * properties["unitless_density"]
 
-	distance_vectors = (distance_vectors + box_size / 2) % box_size - box_size / 2
+	# Make an array from the list
+	correlation_function_data_array = np.array(correlation_function_data_list)
 
-	# assert np.all(np.abs(distance_vectors) <= self.box_size/2)
+	# Yeet the temporary variables
+	del correlation_function_data_list, correlation_function_data
 
-	return distance_vectors
+	# Plot and print results
+	print(f"Unitless pressure: {np.mean(unitless_pressure)} +/- {np.std(unitless_pressure, ddof=1)}")
+	plot_correlation_function(correlation_function_data_array.mean(axis=0), distance, properties)
 
-# Slower than using numpy
-@njit()
-def get_distance_vectors_jitted(positions_at_time, box_size, dimension) -> np.ndarray:
-	"""Produces distances r_{ij} without r_{ii}, using minimal image convention. Takes direction into account!"""
-	distance_vectors = np.zeros(shape=(positions_at_time.shape[0]-1, positions_at_time.shape[0], dimension))
-	# print(positions_at_time)
-	for i in range(positions_at_time.shape[0]):
-		addition = False
-		for j in range(positions_at_time.shape[0]):
-			if i != j:
-				distance_vectors[j-addition, i, ::] = positions_at_time[i,::] - positions_at_time[j,::]
-			else:
-				addition = True
+	# Throw away the simulation data
+	if cleanup:
+		[del_dir(path) for path in paths]
 
-	distance_vectors = (distance_vectors + box_size / 2) % box_size - box_size / 2
-
-	# assert np.all(np.abs(distance_vectors) <= self.box_size/2)
-	#assert np.all(get_distance_vectors_old(positions_at_time, box_size, dimension) == distance_vectors)
-	return distance_vectors
-
-
-def apply_periodic_boundaries(positions, period) -> np.ndarray:
-	"""Simply apply modulus. Is it faster to check first? Probably not."""
-	return np.mod(positions, period)
-
-
-def distance_hist(array, bins) -> np.array:
-	"""
-
-	:param array: points wherebetween distance should be computed
-	:type array: np.ndarray
-	:param bins: bins to make hist
-	:type bins: np.array
-	:return: array of histogram data
-	:rtype: np.array
-	"""
-	distances = distance_matrix(array, array)
-	hist, _ = np.histogram(distances.flatten(), bins=bins)
-	return hist
-
-
-
+	# dead degrees of freedom needs to be 1; 1 data point has std of infty!
+	# Return (pressure, pressure error) and (correlation function bins, correlation function, correlation function error)
+	return (
+		(
+			np.mean(unitless_pressure),
+			np.std(unitless_pressure, ddof=1)
+		),
+		(
+			distance,
+			correlation_function_data_array.mean(axis=0),
+			correlation_function_data_array.std(ddof=1)
+		 )
+	)
