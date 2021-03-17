@@ -48,7 +48,7 @@ def pressure_sum(positions: np.ndarray) -> np.ndarray:
 	return np.sum(distances[np.triu_indices_from(distances, 1)] * dau_U)
 
 
-def pressure_over_rho(array: np.ndarray) -> Tuple[float, float]:
+def pressure_over_rho(array: np.ndarray, properties) -> Tuple[float, float]:
 	"""
 	Calculates the pressure divided by rho
 	:param array: positions
@@ -63,7 +63,7 @@ def pressure_over_rho(array: np.ndarray) -> Tuple[float, float]:
 	for tstep, row in enumerate(array):
 		sum_term[tstep] = pressure_sum(row)
 
-	pressure_array = 1 - 1/(3*particles)*sum_term / 2
+	pressure_array = properties["unitless_temperature"] - 1/(3*particles)*sum_term / 2
 	print(pressure_array.mean())
 
 	return pressure_array.mean(), pressure_array.std(ddof=1)

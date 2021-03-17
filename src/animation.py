@@ -16,7 +16,7 @@ from src.process_results import *
 
 
 class Animation:
-    def __init__(self, positions, kinetic_energy, potential_energy, box_size, dimension, frameskip=1):
+    def __init__(self, positions, kinetic_energy, potential_energy, properties, frameskip=1):
         """
         Initializes the Animation Class. Stores and calculates all relevant physical quantities and sets up the figures for the animation.
         
@@ -38,6 +38,9 @@ class Animation:
         mpl.use('Qt5Agg')
         self.frameskip = frameskip
 
+        box_size = properties["box_size"]
+        dimension = properties["dimension"]
+
         self.frame_index=0
         self.positions = positions
         self.dimension = dimension
@@ -48,7 +51,7 @@ class Animation:
         
         self.pressure = np.zeros(shape=positions.shape[0])
         for i in np.arange(positions.shape[0]):
-            self.pressure[i] = pressure_over_rho(positions[i,:].reshape((1,*positions.shape[1:])))[0] #* properties["unitless_density"]
+            self.pressure[i] = pressure_over_rho(positions[i,:].reshape((1,*positions.shape[1:])), properties=properties)[0] #* properties["unitless_density"]
         
         if type(box_size) in (int, float):
             self.box_size = np.repeat(box_size, dimension)

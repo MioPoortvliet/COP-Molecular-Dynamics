@@ -33,7 +33,7 @@ def pressure_fpaths(paths):
 		positions = load_and_concat(path, "positions")
 
 		# Calculate the unitless pressure
-		unitless_pressure[i,::] = pressure_over_rho(positions)
+		unitless_pressure[i,::] = pressure_over_rho(positions, properties)
 
 	unitless_pressure *= properties["unitless_density"]
 
