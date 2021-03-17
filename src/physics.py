@@ -39,7 +39,7 @@ def deriv_of_U_wrt_r(distances:np.ndarray) -> np.ndarray:
 	return - 4 * (12 / distances ** 13 - 6 / distances ** 7)
 
 
-def initialize_maxwellian_velocities(temperature: float, particles: np.ndarray, dimension: np.ndarray) -> np.ndarray:
+def initialize_maxwellian_velocities(temperature: float, particles: int, dimension: float) -> np.ndarray:
 	"""
 	Given a temperature, initializes an array of shape (particles, dimension)
 	in a maxwellian velocity distribution to match the temperature

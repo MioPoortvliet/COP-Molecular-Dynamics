@@ -20,7 +20,7 @@ def run_statistics(
 		unitless_density=unitless_density,
 		unitless_temperature=unitless_temperature,
 		N=N,
-		steps_per_run=steps_per_run
+		steps=steps_per_run
 	)
 	return paths
 

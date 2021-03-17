@@ -8,24 +8,13 @@ from typing import Tuple
 
 def N_runs(
 		N,
-		unitless_density = 1,
-		unitless_temperature = 1,
-		timestep = 1e-2,
-		steps_per_run = 1000,
-		unit_cells=3,
-		verbosity=1
+		**kwargs
 	) -> str:
 	fpaths = []
 	for i in range(N):
 		# Run simulation and store filepath of output data
 		sim = Simulation(
-			unit_cells_along_axis=unit_cells,
-			unitless_density=unitless_density,
-			unitless_temperature=unitless_temperature,
-			steps=steps_per_run,
-			time_step=timestep,
-			verbosity=verbosity,
-			steps_between_writing=1000
+			**kwargs
 		)
 		sim.run_sim()
 

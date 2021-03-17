@@ -13,7 +13,7 @@ class Simulation():
 			self,
 			end_time=None,
 			steps = 1000,
-			density=1e5,
+			density=1.602,
 			unitless_density=None,
 			temperature=293.15,
 			unitless_temperature=None,
@@ -25,7 +25,8 @@ class Simulation():
 			steps_between_writing=1000,
 			fpath="data/",
 			verbosity=1,
-			treshold=0.1
+			treshold=0.1,
+			steps_for_thermalizing=999
 	) -> None:
 		"""
 		Initialize the simulation class. Stores all variables and sets the simulation up to be able to run.
@@ -72,7 +73,7 @@ class Simulation():
 		self.particles = 4 * unit_cells_along_axis ** self.dimension  # int(particles)
 
 		if unitless_density is None:
-			self.density = density * sigma**self.dimension
+			self.density = density * sigma**self.dimension / particle_mass
 		else:
 			self.density = unitless_density
 
@@ -84,6 +85,7 @@ class Simulation():
 		self.time_step = time_step  # is already dimensioinless, it is the h
 		self.steps_between_writing = steps_between_writing
 		self.treshold = treshold
+		self.steps_for_thermalizing = steps_for_thermalizing
 
 		if end_time is None:
 			self.max_timesteps = steps
@@ -212,7 +214,7 @@ class Simulation():
 		self.print_(1, f"\nDone! Output to {self.fpath}. \n")
 
 
-	def thermalize(self, steps=100) -> None:
+	def thermalize(self) -> None:
 		"""
 		Makes sure the kinetic energy of the system compared to the expected thermal energy is within the set treshold.
 
@@ -225,7 +227,7 @@ class Simulation():
 		"""
 		# It should not be necessary to thermalize longer than this as steps_between_writing can be quite large
 		# If the array is not large enough to contain these steps throw an error!
-		if steps > self.steps_between_writing:
+		if self.steps_for_thermalizing >= self.steps_between_writing:
 			raise ValueError("Can not store the steps needed to thermalize, either increase the steps between writing or decrease the steps in the thermalization.")
 
 		self.print_(2, "Starting thermalization.")
@@ -235,14 +237,14 @@ class Simulation():
 			# Need some way to propegate with one timestep of initial conditions
 			self.update_euler(0)
 
-			self.run_for_steps(steps)
+			self.run_for_steps(self.steps_for_thermalizing)
 
-			velocity_rescaler = np.sqrt((self.particles-1)*self.dimension*self.temperature/np.sum(self.velocities[steps,::,::]**2))
+			velocity_rescaler = np.sqrt((self.particles-1)*self.dimension*self.temperature/np.sum(self.velocities[self.steps_for_thermalizing,::,::]**2))
 
 			# Reset array and keep last values
-			self.positions[0:2, ::, ::] = self.positions[steps-1:steps+1,::, ::]
-			self.velocities[0:2, ::, ::] = velocity_rescaler*self.velocities[steps-1:steps+1,::, ::]
-			self.potential_energy[0:2, ::] = self.potential_energy[steps-1:steps+1, ::]
+			self.positions[0:2, ::, ::] = self.positions[self.steps_for_thermalizing-1:self.steps_for_thermalizing+1,::, ::]
+			self.velocities[0:2, ::, ::] = velocity_rescaler*self.velocities[self.steps_for_thermalizing-1:self.steps_for_thermalizing+1,::, ::]
+			self.potential_energy[0:2, ::] = self.potential_energy[self.steps_for_thermalizing-1:self.steps_for_thermalizing+1, ::]
 
 			self.print_(1, f"Thermalization stops if {abs(velocity_rescaler - 1):1.3f} <= {self.treshold}.")
 
