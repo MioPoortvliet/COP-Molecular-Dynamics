@@ -21,10 +21,10 @@ class Animation:
         """
         Initializes the Animation Class. Stores and calculates all relevant physical quantities and sets up the figures for the animation.
         
-        param positions: positions of every particle at all timesteps.
+        param positions: positions per particle at every timestep.
         type positions: np.ndarray
-        param kinetic energy: kinetic energy per particle at every timestep
-        type positions: np.ndarray
+        param velocities: velocities per particle at every timestep
+        type velocities: np.ndarray
         param potential energy: potential energy per particle at every timestep
         type potential energy: np.ndarray
         param properties: 
@@ -76,24 +76,26 @@ class Animation:
             self.time_text = self.ax.text2D(.02, .02, '', transform=self.ax.transAxes, color="black")
             self.config_text = self.ax.text2D(.02, .95, '', transform=self.ax.transAxes, color="black")
             self.ax.set_zlim3d([0, self.box_size[2]])
-            self.ax.set_zlabel('Z')
+            self.ax.set_zlabel('Z (meters)')
         
-        self.time_per_frame = properties["time_step"]* np.sqrt((properties["sigma"]**2) * properties["particle_mass"] /(properties["epsilon_over_kb"] * properties["kb"]))
-        self.config_text.set_text("Temperature = {temp:.1f} K\n".format(temp = properties["unitless_temperature"]*properties["epsilon_over_kb"])
+        self.time_per_frame = properties["time_step"]* np.sqrt((properties["sigma"]**2) * properties["particle_mass"] /(properties["epsilon"]))
+        self.config_text.set_text("Temperature = {temp:.1f} K\n".format(temp = properties["temperature"])
                                   +
-                                  r"Density = {density:.1f} kg m$^{{-3}}$".format(density = properties["unitless_density"]*properties["particle_mass"]/(properties["sigma"]**3)))
+                                  r"Density = {density:.1f} kg m$^{{-3}}$".format(density = properties["density"]))
         
         self.ax.set_xlim([0, self.box_size[0]])
         self.ax.set_ylim([0, self.box_size[1]])
-        self.ax.set_xlabel('X')
-        self.ax.set_ylabel('Y')
-        self.ax.set_title('Molecular dynamics')
+        self.ax.set_xlabel('X (meters)')
+        self.ax.set_ylabel('Y (meters)')
+        self.ax.set_title('Atomic Dynamics: Argon')
         
         self.tail_length = 3
         
         self.ax_energy = self.fig.add_subplot(self.gs[0:2,-2:])
         self.ax_energy.set_title('Energy')
-        self.ax_energy.set_xlim(0,len(self.kin_energy))
+        self.ax_energy.set_xlabel('Time (Seconds)')
+        self.ax_energy.set_ylabel('Energy (Joules)')
+        self.ax_energy.set_xlim(0,len(self.kin_energy)*self.time_per_frame)
         self.ax_energy.set_ylim((np.amin([self.kin_energy,self.pot_energy])),(np.amax([self.kin_energy, self.pot_energy])))
         self.line_kin_energy, = self.ax_energy.plot([],[], label="kinetic energy")
         self.line_pot_energy, = self.ax_energy.plot([],[], label="potential energy")
@@ -102,7 +104,9 @@ class Animation:
         
         self.ax_pressure   = self.fig.add_subplot(self.gs[2,-2:])
         self.ax_pressure.set_title('Pressure')
-        self.ax_pressure.set_xlim(0,len(self.pressure))
+        self.ax_pressure.set_xlabel('Time (Seconds)')
+        self.ax_pressure.set_ylabel('Pressure (Pascal)')
+        self.ax_pressure.set_xlim(0,len(self.pressure)*self.time_per_frame)
         self.ax_pressure.set_ylim((np.amin(self.pressure)),(np.amax(self.pressure)))
         self.line_pressure, = self.ax_pressure.plot([],[], label="pressure")
     
@@ -127,7 +131,7 @@ class Animation:
                 self.scat.set_sizes(np.linspace(0,4,num=self.tail_length*self.frameskip, dtype=float))
         self.update_energy(self.frame_index)
         self.update_pressure(self.frame_index)
-        self.time_text.set_text('frame = {frame:.1f}\n time = {time:.1f}'.format(frame = self.frame_index, time = self.frame_index*self.time_per_frame))
+        self.time_text.set_text('frame = {frame:.1f}\ntime = {time:.3f}e-12 s'.format(frame = self.frame_index, time = self.frame_index*self.time_per_frame*(1e12)))
 
     
     def update3d(self, i):
@@ -141,12 +145,12 @@ class Animation:
                 self.scat.set_sizes(np.linspace(0,4,num=self.tail_length*self.frameskip, dtype=float))
         self.update_energy(self.frame_index)
         self.update_pressure(self.frame_index)
-        self.time_text.set_text('frame = {frame:.1f}\n time = {time:.3f}e-12 s'.format(frame = self.frame_index, time = self.frame_index*self.time_per_frame*(1e12)))
+        self.time_text.set_text('frame = {frame:.1f}\ntime = {time:.3f}e-12 s'.format(frame = self.frame_index, time = self.frame_index*self.time_per_frame*(1e12)))
 
     def update_energy(self, i):
-        self.line_kin_energy.set_data(np.arange(i), self.kin_energy[:i])
-        self.line_pot_energy.set_data(np.arange(i), self.pot_energy[:i])
-        self.line_tot_energy.set_data(np.arange(i), self.tot_energy[:i])
+        self.line_kin_energy.set_data(np.arange(i)*self.time_per_frame, self.kin_energy[:i])
+        self.line_pot_energy.set_data(np.arange(i)*self.time_per_frame, self.pot_energy[:i])
+        self.line_tot_energy.set_data(np.arange(i)*self.time_per_frame, self.tot_energy[:i])
     
     def update_pressure(self, i):
-        self.line_pressure.set_data(np.arange(i), self.pressure[:i])
+        self.line_pressure.set_data(np.arange(i)*self.time_per_frame, self.pressure[:i])
