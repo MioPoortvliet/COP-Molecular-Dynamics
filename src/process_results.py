@@ -1,10 +1,9 @@
 import numpy as np
-from src.math_utils import *
 from src.physics import *
 from typing import Tuple
 
 
-def correlation_function(array: np.ndarray, max_length: float) -> (np.ndarray, np.ndarray):
+def correlation_function(array: np.ndarray, max_length: float) -> Tuple[np.ndarray, np.ndarray]:
 	"""
 	Returns the correlation function of the array, up to max_length
 
@@ -17,19 +16,22 @@ def correlation_function(array: np.ndarray, max_length: float) -> (np.ndarray, n
 	"""
 	time_steps, particles, dimension = array.shape
 
-	distance = np.linspace(0.00001*max_length, max_length/2 * np.sqrt(dimension), 300)
-	delta_r = distance[1]-distance[0]
+	# Set up bins
+	distance_bins = np.linspace(0.00001*max_length, max_length/2 * np.sqrt(dimension), 300)
+	delta_r = distance_bins[1]-distance_bins[0]
 
-	average_distance_frequency = np.zeros(distance.size-1)
+	# Calculate distance between pairs histogram, averaged over time
+	average_distance_frequency = np.zeros(distance_bins.size-1)
 	for row in array:
-		average_distance_frequency += distance_hist(row, distance)
+		average_distance_frequency += distance_hist(row, distance_bins, max_length)
 
 	# Divide by samples to get average
 	average_distance_frequency /= time_steps
 
-	pair_correlation_function = 2 * max_length**dimension / (particles * (particles-1)) * average_distance_frequency / (4 * np.pi * distance[1:]**2 * delta_r)
+	# Then the correlation function
+	pair_correlation_function = 2 * max_length**dimension / (particles * (particles-1)) * average_distance_frequency / (4 * np.pi * distance_bins[1:]**2 * delta_r)
 
-	return pair_correlation_function, distance[:-1]
+	return pair_correlation_function, distance_bins[:-1]
 
 
 def pressure_sum(positions: np.ndarray) -> np.ndarray:
@@ -56,19 +58,31 @@ def find_pressure(array: np.ndarray, properties) -> Tuple[float, float]:
 	:return: pressure over rho
 	:rtype: float
 	"""
+	# Create arrays
 	particles = array.shape[1]
 	time_steps = array.shape[0]
 
+	# Calculate average of nasty sum term
 	sum_term = np.zeros(time_steps)
 	for tstep, row in enumerate(array):
 		sum_term[tstep] = pressure_sum(row/properties["sigma"])
 
+	# Pressure is calculated
 	pressure_array = properties["unitless_temperature"] - 1/(3*particles)*sum_term / 2
 	pressure_array *= properties["unitless_density"]
+
+	# Pressure is converted to units of Pa
 	pressure_array = to_pressure(pressure_array, sigma=properties["sigma"], epsilon=properties["epsilon"])
 
 	return pressure_array.mean(), pressure_array.std(ddof=1)
 
 
-def to_pressure(unitless_pressure, sigma, epsilon):
+def to_pressure(unitless_pressure, sigma, epsilon) -> np.ndarray:
+	"""
+	Gives units to pressure
+	:type unitless_pressure:
+	:type sigma: float
+	:type epsilon: float
+	:rtype: np.ndarray
+	"""
 	return epsilon / sigma ** 3 * unitless_pressure

@@ -1,31 +1,11 @@
-import numpy as np
-from typing import Tuple
-
 from src.utils import N_runs, pressure_fpaths, correlation_function_fpaths
 
 
-def run_statistics(
-		unitless_density,
-		unitless_temperature,
-		N,
-		steps_per_run=100,
-		cleanup=True
-					) -> Tuple[
-									Tuple[float, float],
-									Tuple[np.ndarray, np.ndarray, np.ndarray]
-								]:
-
-
-	paths = N_runs(
-		unitless_density=unitless_density,
-		unitless_temperature=unitless_temperature,
-		N=N,
-		steps=steps_per_run
-	)
-	return paths
-
-
 if __name__ == "__main__":
-	paths = run_statistics(unitless_density=1, unitless_temperature=1, N=2, steps_per_run=2000)
-	pressure_fpaths(paths)
-	correlation_function_fpaths(paths)
+    temps = [0]#[60, 120, 360]
+    densities = [402.6]#[1680*1.2, 1680*0.8, 1680*0.3]
+    for temp, density in zip(temps, densities):
+        paths = N_runs(density=density, temperature=temp, N=10, steps=100, treshold=0.05, verbosity=0)
+        print(temp, density)
+        pressure_fpaths(paths)
+    #correlation_function_fpaths(paths)

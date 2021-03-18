@@ -34,9 +34,10 @@ All functions have type annotations and a comprehensive docstring.
 
 ###Examples
 In the folder ```/examples/```, scripts making use of the ```/src/``` files are located. 
-- ```energy.py``` plots the energy of the simulation and finishes with an interactive animation of the particle positions. 
+- ```energy.py``` plots the energy, velocity distribution and a 1D projection of the paths of the simulation. It also plots the correlation function. 
 - ```rhoT-plot.py``` makes a plot with temperature on the horizontal axis and density on the vertical axis. The z-variable is the pressure. All these quantities are in terms of the unitless quantities used by the simulation.
 - ```statistics_pressure_and_correlationfunction.py``` runs the simulation N times and produces a pressure along with an error estimation, along with a plot of the correlation function.
+- ```animation.py``` runs the simulation and plots the positions in an interactive animated plot.
 
 ###TODO
 - export files in SI units

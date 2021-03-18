@@ -26,6 +26,10 @@ def N_runs(
 
 def pressure_fpaths(paths):
 	pressure = np.zeros((len(paths), 2))
+
+	if type(paths) == str:
+		paths = [paths]
+
 	for i, path in enumerate(paths):
 		# Load properties of last run
 		properties = load_json(path)
@@ -39,12 +43,12 @@ def pressure_fpaths(paths):
 
 	return np.mean(pressure[::,0]), np.std(pressure[::,0], ddof=1)
 
-def cleanup_paths(paths):
-	for path in paths:
-		del_dir(path)
 
 def correlation_function_fpaths(paths) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 	correlation_function_data_list = []
+
+	if type(paths) == str:
+		paths = [paths]
 
 	for i, path in enumerate(paths):
 		# Load properties of last run

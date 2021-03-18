@@ -10,11 +10,13 @@ def plot_positions(fpath, ticks=5) -> None:
 	plt.xlabel("Time $t$")
 	plt.xticks(np.linspace(0, velocities.shape[0], ticks), [f"{x:,.2e}" for x in np.linspace(0, properties["end_time"], ticks)])
 	plt.ylabel("Position")
+	plt.savefig(f'img/{fpath.replace("/","")}-positions.pdf')
 	plt.show()
 
 	plt.hist(velocities[-1,::,0], bins=100)
 	plt.xlabel("Velocity")
 	plt.ylabel("Counts")
+	plt.savefig(f'img/{fpath.replace("/","")}-velocities.pdf')
 	plt.show()
 
 	"""
@@ -41,6 +43,7 @@ def plot_energies(path, ticks=5):
 	plt.xticks(np.linspace(0, velocities.shape[0], ticks), [f"{x:,.2e}" for x in np.linspace(0, properties["end_time"], ticks)])
 	plt.ylabel("Energy [J]")
 	plt.legend()
+	plt.savefig(f'img/{path.replace("/","")}-energies.pdf')
 	plt.show()
 
 
@@ -48,11 +51,12 @@ def plot_correlation_function(correlation_function, distance, properties):
 	plt.bar(distance, correlation_function, width=distance[1]-distance[0])
 	plt.xlabel("Distance from molecule $r$ [-]")
 	plt.ylabel("Correlation function $g(r)$ [-]")
-	plt.title(f'{properties["particles"]} particles, {properties["total_steps"]} steps, $\\rho={properties["unitless_density"]}$, $T={properties["unitless_temperature"]}$')
+	plt.title(f'{properties["particles"]} particles, {properties["total_steps"]} steps, $\\rho={properties["density"]}$, $T={properties["temperature"]}$')
+	plt.savefig(f'img/{properties["path"].replace("/","")}-correlation_function.pdf')
 	plt.show()
 
 
-def rhoT_plot(pressure_array, temprange, densityrange):
+def rhoT_plot(pressure_array, temprange, densityrange, fpath):
 	cb = plt.imshow(np.rot90(pressure_array[::-1,::]))
 	plt.colorbar(cb)
 	if temprange.size > 7:
@@ -67,4 +71,5 @@ def rhoT_plot(pressure_array, temprange, densityrange):
 		plt.yticks(ticks=np.arange(densityrange.size)[::-1], labels=np.round(densityrange, 2))
 	plt.ylabel("Density")
 	plt.title("Pressure")
+	plt.savefig(f'img/{fpath.replace("/","")}-pressure.pdf')
 	plt.show()

@@ -1,6 +1,5 @@
 import numpy as np
 from src.IO_utils import *
-from src.math_utils import *
 from src.physics import *
 from datetime import datetime
 import json
@@ -17,7 +16,7 @@ class Simulation():
 			unitless_density=None,
 			temperature=293.15,
 			unitless_temperature=None,
-			time_step=1e-3,
+			time_step=1e-2,
 			unit_cells_along_axis=3,
 			particle_mass=6.6335e-26,
 			epsilon_over_kb=119.8,
@@ -61,43 +60,34 @@ class Simulation():
 		:type verbosity: int
 		:param treshold: When to stop thermalization as a relative energy difference.
 		:type treshold: float
+		:param steps_for_thermalizing: Number of steps to thermalize for, should be less than steps_between_writing.
+		:type steps_for_thermalizing: int
 		"""
 		self.verbosity = verbosity
 		self.print_(1, "Initializing...")
 
 		# Store constants
 		self.kb = 1.38e-23
-
-		self.unit_cells_along_axis = unit_cells_along_axis
-		self.dimension = 3
-		self.particles = 4 * unit_cells_along_axis ** self.dimension  # int(particles)
-
-		if unitless_density is None:
-			self.unitless_density = density * sigma**self.dimension / particle_mass
-			self.density = density
-		else:
-			self.unitless_density = unitless_density
-			self.density = unitless_density * particle_mass / sigma**self.dimension
-		if self.unitless_density > 1.5:
-			warnings.warn("Density is so high that the simulation might fail to thermalize.")
-
-		self.box_size = (self.particles / self.unitless_density) ** (1/self.dimension)
-
-		self.time_step = time_step  # is already dimensioinless, it is the h
-		self.steps_between_writing = steps_between_writing
-		self.treshold = treshold
-		self.steps_for_thermalizing = steps_for_thermalizing
-
-		if end_time is None:
-			self.max_timesteps = steps
-			self.end_time = self.max_timesteps * self.time_step
-		else:
-			self.end_time = end_time / np.sqrt(particle_mass * sigma ** 2 / (epsilon_over_kb * self.kb))
-			self.max_timesteps = np.ceil(self.end_time / self.time_step).astype(int)
-
 		self.particle_mass = particle_mass
 		self.epsilon_over_kb = epsilon_over_kb
 		self.sigma = sigma
+
+		# Particle properties
+		self.dimension = 3
+		self.unit_cells_along_axis = unit_cells_along_axis
+		self.particles = 4 * unit_cells_along_axis ** self.dimension  # int(particles)
+
+		# Set density
+		if unitless_density is None:
+			self.unitless_density = density * sigma ** self.dimension / particle_mass
+			self.density = density
+		else:
+			self.unitless_density = unitless_density
+			self.density = unitless_density * particle_mass / sigma ** self.dimension
+		if self.unitless_density > 1.5:
+			warnings.warn("Density is so high that the simulation might fail to thermalize.")
+
+		# Set temperature
 		if unitless_temperature is None:
 			self.unitless_temperature = temperature / epsilon_over_kb
 			self.temperature = temperature
@@ -105,18 +95,36 @@ class Simulation():
 			self.unitless_temperature = unitless_temperature
 			self.temperature = unitless_temperature * epsilon_over_kb
 
+		# This allows us to calculate the box size
+		self.box_size = (self.particles / self.unitless_density) ** (1/self.dimension)
+
+		# Variables to tweak the simulation
+		self.time_step = time_step  # is already dimensioinless, it is the h
+		self.steps_between_writing = steps_between_writing
+		self.treshold = treshold
+		self.steps_for_thermalizing = steps_for_thermalizing
+
+		# Set end time
+		if end_time is None:
+			self.max_timesteps = steps
+			self.end_time = self.max_timesteps * self.time_step
+		else:
+			self.end_time = end_time / np.sqrt(particle_mass * sigma ** 2 / (epsilon_over_kb * self.kb))
+			self.max_timesteps = np.ceil(self.end_time / self.time_step).astype(int)
+
 		# Initialize arrays
 		self.positions = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
-		# self.positions[0,::,::] = np.array([[1.5, 1.5], [3, 3], [4.3, 3], [5.6, 3], [1, 3]])[:self.particles,::]
 		self.positions[0, ::, ::] = fcc_lattice(unit_cells=self.unit_cells_along_axis, atom_spacing=self.box_size / (2 * self.unit_cells_along_axis))
 
 		self.velocities = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
 		self.velocities[0, :, :] = initialize_maxwellian_velocities(self.unitless_temperature, self.particles, self.dimension)
-		# Only this guy has dimension!
+
 		self.potential_energy_array = np.zeros(shape=(self.steps_between_writing, self.particles))
 
+		# Set up IO
 		self.make_file_structure(fpath)
 		self.write_header_file()
+
 		self.print_(2, f"Files will be output to {self.fpath}.\n")
 
 
@@ -158,6 +166,7 @@ class Simulation():
 		header["unitless_temperature"] = float(self.unitless_temperature)
 		header["temperature"] = float(self.temperature)
 		header["box_size"] = float(self.box_size*self.sigma)
+		header["path"] = str(self.fpath)
 
 		with open(self.fpath + "00-header.json", "w") as file:
 			json.dump(header, file)
@@ -198,7 +207,7 @@ class Simulation():
 			self.update_euler(0)
 			distance_vectors = get_distance_vectors(self.positions[0], self.box_size, self.dimension)
 			distances = sum_squared(distance_vectors)
-			self.potential_energy_array[0,::,::] = self.potential_energy(distances)
+			self.potential_energy_array[0,::] = self.potential_energy(distances)
 			del distances, distance_vectors
 
 		# We need to calculate one step to be able to use verlet
@@ -223,14 +232,42 @@ class Simulation():
 		self.print_(1, f"\nDone! Output to {self.fpath}. \n")
 
 
-	def potential_energy(self, distances):
+	def potential_energy(self, distances) -> np.ndarray:
+		"""
+		Returns potential energy given distances between particles
+
+		:param distances: unitless distance array
+		:type distances: np.ndarray
+		:return: Potential energy
+		:rtype: np.array
+		"""
 		distances = self.to_units_position(distances)
+
+		#Divide by 2 because we are double counting pairs
 		return np.sum(4 * (self.sigma**12 * (distances ** (-12)) - (self.sigma**6 * distances ** (-6))), axis=0) * self.epsilon_over_kb * self.kb / 2
 
-	def to_units_position(self, unitless):
+
+	def to_units_position(self, unitless) -> np.ndarray:
+		"""
+		Gives m units to array
+
+		:param unitless:  unitless distance array
+		:type unitless:  np.ndarray
+		:return: distance array
+		:rtype: np.array
+		"""
 		return unitless * self.sigma
 
-	def to_units_velocity(self, unitless):
+
+	def to_units_velocity(self, unitless) -> np.ndarray:
+		"""
+		Gives m/s units to array
+
+		:param unitless: unitless velocity data
+		:type unitless:
+		:return: velocity data
+		:rtype: np.array
+		"""
 		return unitless * np.sqrt(self.epsilon_over_kb * self.kb / self.particle_mass)
 
 
@@ -270,7 +307,6 @@ class Simulation():
 
 			# If the density is too high, numerical errors do not allow this process to function.
 			assert velocity_rescaler > 1e-10
-
 
 
 	def run_for_steps(self, steps: int) -> None:
