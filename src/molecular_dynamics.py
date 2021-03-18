@@ -73,14 +73,15 @@ class Simulation():
 		self.particles = 4 * unit_cells_along_axis ** self.dimension  # int(particles)
 
 		if unitless_density is None:
-			self.density = density * sigma**self.dimension / particle_mass
+			self.unitless_density = density * sigma**self.dimension / particle_mass
+			self.density = density
 		else:
-			self.density = unitless_density
-
-		if self.density > 1.5:
+			self.unitless_density = unitless_density
+			self.density = unitless_density * particle_mass / sigma**self.dimension
+		if self.unitless_density > 1.5:
 			warnings.warn("Density is so high that the simulation might fail to thermalize.")
 
-		self.box_size = (self.particles / self.density) ** (1/self.dimension)
+		self.box_size = (self.particles / self.unitless_density) ** (1/self.dimension)
 
 		self.time_step = time_step  # is already dimensioinless, it is the h
 		self.steps_between_writing = steps_between_writing
@@ -98,9 +99,11 @@ class Simulation():
 		self.epsilon_over_kb = epsilon_over_kb
 		self.sigma = sigma
 		if unitless_temperature is None:
-			self.temperature = temperature / epsilon_over_kb
+			self.unitless_temperature = temperature / epsilon_over_kb
+			self.temperature = temperature
 		else:
-			self.temperature = unitless_temperature
+			self.unitless_temperature = unitless_temperature
+			self.temperature = unitless_temperature * epsilon_over_kb
 
 		# Initialize arrays
 		self.positions = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
@@ -108,7 +111,7 @@ class Simulation():
 		self.positions[0, ::, ::] = fcc_lattice(unit_cells=self.unit_cells_along_axis, atom_spacing=self.box_size / (2 * self.unit_cells_along_axis))
 
 		self.velocities = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
-		self.velocities[0, :, :] = initialize_maxwellian_velocities(self.temperature, self.particles, self.dimension)
+		self.velocities[0, :, :] = initialize_maxwellian_velocities(self.unitless_temperature, self.particles, self.dimension)
 		self.potential_energy = np.zeros(shape=(self.steps_between_writing, self.particles))
 
 		self.make_file_structure(fpath)
@@ -147,8 +150,10 @@ class Simulation():
 		header["epsilon_over_kb"] = float(self.epsilon_over_kb)
 		header["sigma"] = float(self.sigma)
 		header["kb"] = float(self.kb)
-		header["unitless_density"] = float(self.density)
-		header["unitless_temperature"] = float(self.temperature)
+		header["unitless_density"] = float(self.unitless_density)
+		header["density"] = float(self.density)
+		header["unitless_temperature"] = float(self.unitless_temperature)
+		header["temperature"] = float(self.temperature)
 		header["box_size"] = float(self.box_size)
 
 		with open(self.fpath + "00-header.json", "w") as file:
@@ -184,7 +189,7 @@ class Simulation():
 		self.forces = np.zeros(shape=(2, self.particles, self.dimension))
 
 		# If the temperature is zero there is nothing to thermalize, it is all not moving.
-		if self.temperature != 0:
+		if self.unitless_temperature != 0:
 			self.thermalize()
 		else:
 			self.update_euler(0)
@@ -202,9 +207,10 @@ class Simulation():
 
 			# Append data to file
 			self.print_(1, f"Writing {(maxtime+1)*(cycle+1)}/{self.max_timesteps} steps to {self.fpath}")
-			to_file(self.fpath_positions + str(cycle), self.positions[:maxtime])
-			to_file(self.fpath_velocities + str(cycle), self.velocities[:maxtime])
-			to_file(self.fpath_potential_energy + str(cycle), self.potential_energy[:maxtime])
+			# Write to file in SI units
+			to_file(self.fpath_positions + str(cycle), self.to_units_position(self.positions[:maxtime]))
+			to_file(self.fpath_velocities + str(cycle), self.to_units_velocity(self.velocities[:maxtime]) )
+			to_file(self.fpath_potential_energy + str(cycle), self.to_units_potential_energy(self.potential_energy[:maxtime]))
 
 			# Reset arrays
 			self.positions[0:2, ::, ::] = self.positions[maxtime:maxtime + 2, ::, ::]
@@ -212,6 +218,16 @@ class Simulation():
 			self.potential_energy[0:2, ::] = self.potential_energy[maxtime:maxtime+2, ::]
 
 		self.print_(1, f"\nDone! Output to {self.fpath}. \n")
+
+
+	def to_units_position(self, unitless):
+		return unitless * self.sigma
+
+	def to_units_velocity(self, unitless):
+		return unitless * np.sqrt(self.epsilon_over_kb * self.kb / self.particle_mass)
+
+	def to_units_potential_energy(self, unitless):
+		return self.to_units_velocity(1)**2 * self.particle_mass * unitless
 
 
 	def thermalize(self) -> None:
@@ -239,7 +255,7 @@ class Simulation():
 
 			self.run_for_steps(self.steps_for_thermalizing)
 
-			velocity_rescaler = np.sqrt((self.particles-1)*self.dimension*self.temperature/np.sum(self.velocities[self.steps_for_thermalizing,::,::]**2))
+			velocity_rescaler = np.sqrt((self.particles-1)*self.dimension*self.unitless_temperature/np.sum(self.velocities[self.steps_for_thermalizing,::,::]**2))
 
 			# Reset array and keep last values
 			self.positions[0:2, ::, ::] = self.positions[self.steps_for_thermalizing-1:self.steps_for_thermalizing+1,::, ::]
