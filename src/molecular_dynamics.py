@@ -1,3 +1,8 @@
+"""
+Contains the main simulation class.
+Authors: Mio Poortvliet, Jonah Post
+"""
+
 import numpy as np
 from src.IO_utils import *
 from src.physics import *

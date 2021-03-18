@@ -39,6 +39,6 @@ In the folder ```/examples/```, scripts making use of the ```/src/``` files are 
 - ```statistics_pressure_and_correlationfunction.py``` runs the simulation N times and produces a pressure along with an error estimation, along with a plot of the correlation function.
 - ```animation.py``` runs the simulation and plots the positions in an interactive animated plot.
 
-###TODO
-- export files in SI units
-- rename files more consistent
+###Todo
+- More tests
+- Create a GUI to run the simulation from and process results in.

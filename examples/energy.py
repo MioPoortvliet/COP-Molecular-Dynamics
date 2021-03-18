@@ -1,3 +1,7 @@
+"""
+Plot the energy over time, as well as a projection of the positions and the correlation function.
+Authors: Mio Poortvliet
+"""
 from src.plotting_utilities import plot_positions, plot_energies
 from src.animation import Animation
 from src.utils import N_runs, pressure_fpaths, correlation_function_fpaths

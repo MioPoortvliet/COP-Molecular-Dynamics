@@ -1,6 +1,13 @@
+"""
+This file captures all physics used by the simulation.
+Authors: Mio Poortvliet, Jonah Post
+"""
+
 import numpy as np
 from src.math_utils import *
+import scipy.stats
 import numba
+
 
 @njit()
 def force(distance_vectors:np.ndarray, distances:np.ndarray) -> np.ndarray:
@@ -18,7 +25,7 @@ def force(distance_vectors:np.ndarray, distances:np.ndarray) -> np.ndarray:
 
 	# Though it would make sense to compute distances in this function,
 	# we avoid computing it twice this way (we use it in potential energy too).
-	distances=distances.reshape((*distance_vectors.shape[:-1], 1))
+	distances = distances.reshape((*distance_vectors.shape[:-1], 1))
 
 	force = np.zeros(shape=distance_vectors.shape[1::])
 	force[::, ::] = np.sum(

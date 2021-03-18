@@ -1,6 +1,12 @@
+"""
+Process raw data from the simulation to useful results.
+Authors: Mio Poortvliet, Jonah Post
+"""
+
 import numpy as np
 from src.physics import *
 from typing import Tuple
+from scipy.spatial import distance_matrix
 
 
 def correlation_function(array: np.ndarray, max_length: float) -> Tuple[np.ndarray, np.ndarray]:
@@ -42,6 +48,7 @@ def pressure_sum(positions: np.ndarray) -> np.ndarray:
 	:return: sum over the derivative of the potential, used to calculate the pressure.
 	:rtype:
 	"""
+	# This does not take minimum image convention into account! You did this before passing positions to this sum.
 	distances = distance_matrix(positions, positions)
 
 	# Use triu(arr, 1) to only select the upper triangle indices where i>j.
@@ -65,6 +72,8 @@ def find_pressure(array: np.ndarray, properties) -> Tuple[float, float]:
 	# Calculate average of nasty sum term
 	sum_term = np.zeros(time_steps)
 	for tstep, row in enumerate(array):
+		# Minimal image convention
+		row = (row + properties["box_size"] / 2) % properties["box_size"] - properties["box_size"] / 2
 		sum_term[tstep] = pressure_sum(row/properties["sigma"])
 
 	# Pressure is calculated
@@ -72,12 +81,12 @@ def find_pressure(array: np.ndarray, properties) -> Tuple[float, float]:
 	pressure_array *= properties["unitless_density"]
 
 	# Pressure is converted to units of Pa
-	pressure_array = to_pressure(pressure_array, sigma=properties["sigma"], epsilon=properties["epsilon"])
+	pressure_array = to_pressure(pressure_array, sigma=properties["sigma"], epsilon=properties["epsilon"], mass=properties["particle_mass"])
 
 	return pressure_array.mean(), pressure_array.std(ddof=1)
 
 
-def to_pressure(unitless_pressure, sigma, epsilon) -> np.ndarray:
+def to_pressure(unitless_pressure, sigma, epsilon, mass) -> np.ndarray:
 	"""
 	Gives units to pressure
 	:type unitless_pressure:

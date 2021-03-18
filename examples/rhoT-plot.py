@@ -1,3 +1,7 @@
+"""
+Plot the pressure in a grid of density-temperature points
+Authors: Mio Poortvliet
+"""
 import numpy as np
 
 from src.plotting_utilities import rhoT_plot
@@ -48,7 +52,7 @@ def plot_rhoT_from_file(path="data/pressure/"):
 
 
 if __name__ == "__main__":
-	resolution = 20 # total resolution is this number squared!
+	resolution = 1 # total resolution is this number squared!
 
 	temprange=np.linspace(2.5, 3.5, resolution)
 	densityrange=np.linspace(0.5, 1.4, resolution)[::-1]

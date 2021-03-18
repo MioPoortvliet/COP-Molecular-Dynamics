@@ -1,9 +1,12 @@
+"""
+Test if the pressure is close (enough) to the literature value.
+https://www.engineeringtoolbox.com/argon-density-specific-weight-temperature-pressure-d_2089.html
+Authors: Mio Poortvliet
+"""
 from src.utils import N_runs
-from src.utils import pressure_fpaths, correlation_function_fpaths
+from src.utils import pressure_fpaths
 from src.plotting_utilities import plot_energies
 from src.molecular_dynamics import Simulation
-from src.IO_utils import load_and_concat
-import numpy as np
 
 
 def mole_per_liter_to_kg_per_m3(mole_per_liter):

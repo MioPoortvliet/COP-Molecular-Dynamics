@@ -1,3 +1,8 @@
+"""
+Helper functions to run the simulation and calculate results in batches.
+Authors: Mio Poortvliet, Jonah Post
+"""
+
 import numpy as np
 import matplotlib as plt
 from src.molecular_dynamics import Simulation

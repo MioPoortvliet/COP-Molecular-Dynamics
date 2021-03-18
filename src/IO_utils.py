@@ -1,3 +1,7 @@
+"""
+Helper functions for input/output.
+Authors: Mio Poortvliet, Jonah Post
+"""
 import numpy as np
 import os
 import json

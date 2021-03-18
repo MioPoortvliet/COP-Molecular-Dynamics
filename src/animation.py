@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Feb  5 11:56:24 2021
+For the interactive animation
 
 @author: Jonah Post
 """

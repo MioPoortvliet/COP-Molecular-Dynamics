@@ -1,7 +1,10 @@
+"""
+Functions to make calculating certain things easier, all these funtions are mathy and as abstract as possible (though
+their function parameters might be named as physical variables).
+Authors: Mio Poortvliet, Jonah Post
+"""
+
 import numpy as np
-import scipy.stats
-import matplotlib.pyplot as plt
-from scipy.spatial import distance_matrix
 from numba import njit
 
 

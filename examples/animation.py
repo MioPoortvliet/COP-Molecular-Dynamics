@@ -1,5 +1,9 @@
+"""
+Make an animation of the simulated particle positions.
+Authors: Jonah Post
+"""
 from src.animation import Animation
-from src.utils import N_runs, pressure_fpaths, correlation_function_fpaths
+from src.utils import N_runs
 
 
 if __name__ == "__main__":
