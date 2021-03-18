@@ -32,7 +32,7 @@ def correlation_function(array: np.ndarray, max_length: float) -> (np.ndarray, n
 	return pair_correlation_function, distance[:-1]
 
 
-def pressure_sum(positions: np.ndarray, sigma, epsilon) -> np.ndarray:
+def pressure_sum(positions: np.ndarray) -> np.ndarray:
 	"""
 	Partial sum needed to calculate the pressure. Takes positions.
 	:param positions: array of positions to use when calculating pressure
@@ -43,7 +43,7 @@ def pressure_sum(positions: np.ndarray, sigma, epsilon) -> np.ndarray:
 	distances = distance_matrix(positions, positions)
 
 	# Use triu(arr, 1) to only select the upper triangle indices where i>j.
-	dau_U = deriv_of_U_wrt_r(distances[np.triu_indices_from(distances, 1)], sigma=sigma, epsilon=epsilon)
+	dau_U = deriv_of_U_wrt_r(distances[np.triu_indices_from(distances, 1)])
 
 	return np.sum(distances[np.triu_indices_from(distances, 1)] * dau_U)
 
@@ -61,9 +61,14 @@ def find_pressure(array: np.ndarray, properties) -> Tuple[float, float]:
 
 	sum_term = np.zeros(time_steps)
 	for tstep, row in enumerate(array):
-		sum_term[tstep] = pressure_sum(row, sigma=properties["sigma"], epsilon=properties["epsilon"])
+		sum_term[tstep] = pressure_sum(row/properties["sigma"])
 
-	pressure_array = 1 - 1/(3*particles*properties["temperature"]*properties["kb"])*sum_term / 2
-	pressure_array *= properties["density"] * properties["temperature"] * properties["kb"]
+	pressure_array = properties["unitless_temperature"] - 1/(3*particles)*sum_term / 2
+	pressure_array *= properties["unitless_density"]
+	pressure_array = to_pressure(pressure_array, sigma=properties["sigma"], epsilon=properties["epsilon"])
 
 	return pressure_array.mean(), pressure_array.std(ddof=1)
+
+
+def to_pressure(unitless_pressure, sigma, epsilon):
+	return epsilon / sigma ** 3 * unitless_pressure

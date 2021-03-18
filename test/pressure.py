@@ -6,14 +6,6 @@ from src.IO_utils import load_and_concat
 import numpy as np
 
 
-def to_pressure(unitless_pressure):
-	sim = Simulation(verbosity=0)
-	sigma = sim.sigma
-	mass = sim.particle_mass
-	epsilon = sim.epsilon_over_kb * sim.kb
-	return epsilon / sigma ** 3 * unitless_pressure
-
-
 def mole_per_liter_to_kg_per_m3(mole_per_liter):
 	avogadro = 6.0221409e+23
 	sim = Simulation(verbosity=0)
