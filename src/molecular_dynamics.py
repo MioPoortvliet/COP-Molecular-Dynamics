@@ -154,7 +154,7 @@ class Simulation():
 		header["density"] = float(self.density)
 		header["unitless_temperature"] = float(self.unitless_temperature)
 		header["temperature"] = float(self.temperature)
-		header["box_size"] = float(self.box_size)
+		header["box_size"] = float(self.box_size*self.sigma)
 
 		with open(self.fpath + "00-header.json", "w") as file:
 			json.dump(header, file)
