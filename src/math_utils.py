@@ -2,7 +2,7 @@ import numpy as np
 import scipy.stats
 import matplotlib.pyplot as plt
 from scipy.spatial import distance_matrix
-from numba import njit, boolean
+from numba import njit
 
 
 def sum_squared(arr) -> np.ndarray:

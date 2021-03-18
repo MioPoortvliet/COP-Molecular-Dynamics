@@ -1,5 +1,6 @@
 import numpy as np
 from src.math_utils import *
+import numba
 
 @njit()
 def force(distance_vectors:np.ndarray, distances:np.ndarray) -> np.ndarray:
