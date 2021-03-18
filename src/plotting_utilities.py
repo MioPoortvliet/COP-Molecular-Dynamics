@@ -1,13 +1,16 @@
 import matplotlib.pyplot as plt
+from src.IO_utils import load_and_concat, load_json
 import numpy as np
 
-def plot_positions(pos, vel) -> None:
-	plt.plot(pos[::,::,0], '.')
+def plot_positions(fpath) -> None:
+	positions = load_and_concat(fpath, "positions")
+	velocities = load_and_concat(fpath, "velocities")
+	plt.plot(positions[::,::,0], '.')
 	plt.xlabel("Time index")
 	plt.ylabel("Position")
 	plt.show()
 
-	plt.hist(vel[-1,::,0], bins=100)
+	plt.hist(velocities[-1,::,0], bins=100)
 	plt.xlabel("Velocity")
 	plt.ylabel("Counts")
 	plt.show()
@@ -20,10 +23,20 @@ def plot_positions(pos, vel) -> None:
 	"""
 
 
-def plot_energies(kinetic_energy, potential_energy):
+def plot_energies(path):
+	properties = load_json(path)
+
+	velocities = load_and_concat(path, "velocities")
+	potential_energy = load_and_concat(path, "potential_energy")
+
+	kinetic_energy = .5 * np.sum(velocities ** 2, axis=-1) * properties["particle_mass"]
+
 	plt.plot(np.sum(kinetic_energy, axis=-1), '.', label="ke")
 	plt.plot(np.sum(potential_energy, axis=-1), '.', label="pe")
 	plt.plot(np.sum(potential_energy, axis=-1)+np.sum(kinetic_energy, axis=-1), '.', label="total")
+
+	plt.xlabel("Time $t$")
+	plt.ylabel("Energy [J]")
 	plt.legend()
 	plt.show()
 

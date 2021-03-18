@@ -25,7 +25,7 @@ def N_runs(
 
 
 def pressure_fpaths(paths):
-	unitless_pressure = np.zeros((len(paths), 2))
+	pressure = np.zeros((len(paths), 2))
 	for i, path in enumerate(paths):
 		# Load properties of last run
 		properties = load_json(path)
@@ -33,11 +33,11 @@ def pressure_fpaths(paths):
 		positions = load_and_concat(path, "positions")
 
 		# Calculate the unitless pressure
-		unitless_pressure[i,::] = find_pressure(positions, properties)
+		pressure[i,::] = find_pressure(positions, properties)
 
-	print(f"Unitless pressure: {np.mean(unitless_pressure[::,0])} +/- {sum_squared(unitless_pressure[::,1])}")
+	print(f"Pressure: {np.mean(pressure[::,0])} +/- {sum_squared(pressure[::,1])}")
 
-	return np.mean(unitless_pressure[::,0]), sum_squared(unitless_pressure[::,1])
+	return np.mean(pressure[::,0]), sum_squared(pressure[::,1])
 
 def cleanup_paths(paths):
 	for path in paths:

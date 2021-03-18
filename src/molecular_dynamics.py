@@ -112,7 +112,8 @@ class Simulation():
 
 		self.velocities = np.zeros(shape=(self.steps_between_writing, self.particles, self.dimension))
 		self.velocities[0, :, :] = initialize_maxwellian_velocities(self.unitless_temperature, self.particles, self.dimension)
-		self.potential_energy = np.zeros(shape=(self.steps_between_writing, self.particles))
+		# Only this guy has dimension!
+		self.potential_energy_array = np.zeros(shape=(self.steps_between_writing, self.particles))
 
 		self.make_file_structure(fpath)
 		self.write_header_file()
@@ -148,6 +149,7 @@ class Simulation():
 		header["total_steps"] = int(self.max_timesteps)
 		header["particle_mass"] = float(self.particle_mass)
 		header["epsilon_over_kb"] = float(self.epsilon_over_kb)
+		header["epsilon"] = float(self.epsilon_over_kb * self.kb)
 		header["sigma"] = float(self.sigma)
 		header["kb"] = float(self.kb)
 		header["unitless_density"] = float(self.unitless_density)
@@ -195,7 +197,7 @@ class Simulation():
 			self.update_euler(0)
 			distance_vectors = get_distance_vectors(self.positions[0], self.box_size, self.dimension)
 			distances = sum_squared(distance_vectors)
-			self.potential_energy[0,::,::] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
+			self.potential_energy_array[0,::,::] = self.potential_energy(distances)
 			del distances, distance_vectors
 
 		# We need to calculate one step to be able to use verlet
@@ -210,24 +212,25 @@ class Simulation():
 			# Write to file in SI units
 			to_file(self.fpath_positions + str(cycle), self.to_units_position(self.positions[:maxtime]))
 			to_file(self.fpath_velocities + str(cycle), self.to_units_velocity(self.velocities[:maxtime]) )
-			to_file(self.fpath_potential_energy + str(cycle), self.to_units_potential_energy(self.potential_energy[:maxtime]))
+			to_file(self.fpath_potential_energy + str(cycle), self.potential_energy_array[:maxtime])
 
 			# Reset arrays
 			self.positions[0:2, ::, ::] = self.positions[maxtime:maxtime + 2, ::, ::]
 			self.velocities[0:2, ::, ::] = self.velocities[maxtime:maxtime + 2, ::, ::]
-			self.potential_energy[0:2, ::] = self.potential_energy[maxtime:maxtime+2, ::]
+			self.potential_energy_array[0:2, ::] = self.potential_energy_array[maxtime:maxtime+2, ::]
 
 		self.print_(1, f"\nDone! Output to {self.fpath}. \n")
 
+
+	def potential_energy(self, distances):
+		distances = self.to_units_position(distances)
+		return np.sum(4 * (self.sigma**12 * (distances ** (-12)) - (self.sigma**6 * distances ** (-6))), axis=0) * self.epsilon_over_kb * self.kb / 2
 
 	def to_units_position(self, unitless):
 		return unitless * self.sigma
 
 	def to_units_velocity(self, unitless):
 		return unitless * np.sqrt(self.epsilon_over_kb * self.kb / self.particle_mass)
-
-	def to_units_potential_energy(self, unitless):
-		return self.to_units_velocity(1)**2 * self.particle_mass * unitless
 
 
 	def thermalize(self) -> None:
@@ -260,7 +263,7 @@ class Simulation():
 			# Reset array and keep last values
 			self.positions[0:2, ::, ::] = self.positions[self.steps_for_thermalizing-1:self.steps_for_thermalizing+1,::, ::]
 			self.velocities[0:2, ::, ::] = velocity_rescaler*self.velocities[self.steps_for_thermalizing-1:self.steps_for_thermalizing+1,::, ::]
-			self.potential_energy[0:2, ::] = self.potential_energy[self.steps_for_thermalizing-1:self.steps_for_thermalizing+1, ::]
+			self.potential_energy_array[0:2, ::] = self.potential_energy_array[self.steps_for_thermalizing-1:self.steps_for_thermalizing+1, ::]
 
 			self.print_(1, f"Thermalization stops if {abs(velocity_rescaler - 1):1.3f} <= {self.treshold}.")
 
@@ -306,7 +309,7 @@ class Simulation():
 		self.velocities[time_index + 1] = self.velocities[time_index] + self.forces[1] * self.time_step
 
 		# Calculate potential energy
-		self.potential_energy[time_index+1] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
+		self.potential_energy_array[time_index+1] = self.potential_energy(distances)
 
 
 	def update_verlet(self, time_index: int) -> None:
@@ -335,7 +338,7 @@ class Simulation():
 		self.velocities[time_index + 1] = self.velocities[time_index] + self.time_step / 2 * np.sum(self.forces, axis=0)
 
 		# Calculate potential energy
-		self.potential_energy[time_index+1] = np.sum(4 * ((distances ** (-12)) - (distances ** (-6))), axis=0) / 2
+		self.potential_energy_array[time_index+1] = self.potential_energy(distances)
 
 
 

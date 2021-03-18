@@ -7,14 +7,9 @@ import numpy as np
 
 
 def energy_analysis(fpath) -> None:
-    properties = load_json(fpath)
-    positions = load_and_concat(fpath, "positions")
-    velocities = load_and_concat(fpath, "velocities")
-    potential_energy = load_and_concat(fpath, "potential_energy")
-
-    plot_positions(positions, velocities)
-    plot_energies(.5 * np.sum(velocities ** 2, axis=-1) * properties["particle_mass"], potential_energy)
-    ani = Animation(positions, velocities, potential_energy, properties=properties, frameskip=10)
+    plot_positions(fpath)
+    plot_energies(fpath)
+    ani = Animation(fpath, frameskip=10)
     ani.run()
 
 

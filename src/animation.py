@@ -13,10 +13,11 @@ import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from matplotlib import colors
 from src.process_results import *
+from src.IO_utils import load_and_concat, load_json
 
 
 class Animation:
-    def __init__(self, positions, velocities, potential_energy, properties, frameskip=1):
+    def __init__(self, fpath, frameskip=1):
         """
         Initializes the Animation Class. Stores and calculates all relevant physical quantities and sets up the figures for the animation.
         
@@ -31,7 +32,12 @@ class Animation:
         param frameskip: the number of frames to be skipped while running the animation.
         type frameskip: int
         """
-        
+
+        properties = load_json(fpath)
+        positions = load_and_concat(fpath, "positions")
+        velocities = load_and_concat(fpath, "velocities")
+        potential_energy = load_and_concat(fpath, "potential_energy")
+
         # This call forces the plot in an interactive window
         mpl.use('Qt5Agg')
         self.frameskip = frameskip

@@ -27,7 +27,7 @@ def force(distance_vectors:np.ndarray, distances:np.ndarray) -> np.ndarray:
 	return force
 
 
-def deriv_of_U_wrt_r(distances:np.ndarray, sigma) -> np.ndarray:
+def deriv_of_U_wrt_r(distances:np.ndarray, sigma, epsilon) -> np.ndarray:
 	"""
 	Derivative of U with respect to r
 
@@ -36,7 +36,7 @@ def deriv_of_U_wrt_r(distances:np.ndarray, sigma) -> np.ndarray:
 	:return: Deriv of U for each given distance
 	:rtype: np.ndarray
 	"""
-	return - 4 * (12 * sigma**12 / distances ** 13 - 6 * sigma**6 / distances ** 7)
+	return - 4 * epsilon * (12 * sigma**12 / distances ** 13 - 6 * sigma**6 / distances ** 7)
 
 
 def initialize_maxwellian_velocities(temperature: float, particles: int, dimension: float) -> np.ndarray:
