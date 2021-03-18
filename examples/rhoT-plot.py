@@ -3,7 +3,7 @@ from typing import Tuple
 
 from src.plotting_utilities import rhoT_plot
 from src.IO_utils import del_dir, load_and_concat, load_json
-from src.process_results import pressure_over_rho
+from src.process_results import find_pressure
 from src.utils import N_runs
 
 
@@ -17,7 +17,7 @@ def calc_pressure_for_rhoT(temprange, densityrange, N=1) -> Tuple[np.ndarray, np
 			allpaths.extend(paths)# Calculate the unitless pressure
 			for k, path in enumerate(paths):
 				positions = load_and_concat(path, "positions")
-				pressure[i, j, k] = pressure_over_rho(positions, properties=load_json(path))[0] * rho
+				pressure[i, j, k] = find_pressure(positions, properties=load_json(path))[0]
 
 	[del_dir(path) for path in allpaths]
 

@@ -28,8 +28,8 @@ def check_pressure(known_density, known_temperature, known_pressure):
 
 	pressure, pressure_error = pressure_fpaths(paths)
 	print(known_density, known_temperature, known_pressure)
-	print(to_pressure(pressure), "+/-", to_pressure(pressure_error), known_pressure)
-	print(f"That is a relative error of {1-to_pressure(pressure)/known_pressure}, compare this to the predicted relative error {to_pressure(pressure_error)/to_pressure(pressure)}")
+	print(pressure, "+/-", pressure_error, known_pressure)
+	print(f"That is a relative error of {1-pressure/known_pressure}, compare this to the predicted relative error {pressure_error/pressure}")
 
 	#assert np.abs(to_pressure(pressure) - known_pressure) <= to_pressure(pressure_error)
 

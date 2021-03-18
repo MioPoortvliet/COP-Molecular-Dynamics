@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib as plt
 from src.molecular_dynamics import Simulation
 from src.IO_utils import load_json, load_and_concat, del_dir
-from src.process_results import correlation_function, pressure_over_rho
+from src.process_results import correlation_function, find_pressure
 from src.plotting_utilities import plot_correlation_function
 from typing import Tuple
 from src.math_utils import sum_squared
@@ -33,9 +33,7 @@ def pressure_fpaths(paths):
 		positions = load_and_concat(path, "positions")
 
 		# Calculate the unitless pressure
-		unitless_pressure[i,::] = pressure_over_rho(positions, properties)
-
-	unitless_pressure *= properties["unitless_density"]
+		unitless_pressure[i,::] = find_pressure(positions, properties)
 
 	print(f"Unitless pressure: {np.mean(unitless_pressure[::,0])} +/- {np.mean(unitless_pressure[::,1])}")
 
