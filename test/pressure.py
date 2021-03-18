@@ -23,7 +23,7 @@ def mole_per_liter_to_kg_per_m3(mole_per_liter):
 
 def check_pressure(known_density, known_temperature, known_pressure):
 
-	paths = N_runs(N=2, density=known_density, temperature=known_temperature, steps=500, treshold=0.01, verbosity=1)
+	paths = N_runs(N=2, density=known_density, temperature=known_temperature, steps=500, treshold=0.01, verbosity=0)
 	plot_energies(np.sum(load_and_concat(paths[0], 'velocities')**2, axis=-1) / 2, load_and_concat(paths[0], 'potential_energy'))
 
 	pressure, pressure_error = pressure_fpaths(paths)
