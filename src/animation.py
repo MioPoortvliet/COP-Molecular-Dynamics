@@ -16,7 +16,7 @@ from src.process_results import *
 
 
 class Animation:
-    def __init__(self, positions, kinetic_energy, potential_energy, properties, frameskip=1):
+    def __init__(self, positions, velocities, potential_energy, properties, frameskip=1):
         """
         Initializes the Animation Class. Stores and calculates all relevant physical quantities and sets up the figures for the animation.
         
@@ -26,10 +26,8 @@ class Animation:
         type positions: np.ndarray
         param potential energy: potential energy per particle at every timestep
         type potential energy: np.ndarray
-        param box_size: if int or float the length of a cubic the box. If array_like contains the length of the box in each direction.
-        type box_size: int, float or np.ndarray
-        param dimension: dimensionallity of the system, can be either 2 or 3.
-        type dimension: int
+        param properties: 
+        type properties: 
         param frameskip: the number of frames to be skipped while running the animation.
         type frameskip: int
         """
@@ -38,26 +36,23 @@ class Animation:
         mpl.use('Qt5Agg')
         self.frameskip = frameskip
 
-        box_size = properties["box_size"]
-        dimension = properties["dimension"]
-
         self.frame_index=0
         self.positions = positions
-        self.dimension = dimension
+        self.dimension = properties["dimension"]
         
-        self.kin_energy = np.sum(kinetic_energy, axis=-1)
+        self.kin_energy = np.sum(.5 *properties["particle_mass"] *np.sum(velocities ** 2, axis=-1), axis=-1)
         self.pot_energy = np.sum(potential_energy, axis=-1)
         self.tot_energy = self.kin_energy + self.pot_energy
         
         self.pressure = np.zeros(shape=positions.shape[0])
         for i in np.arange(positions.shape[0]):
-            self.pressure[i] = pressure_over_rho(positions[i,:].reshape((1,*positions.shape[1:])), properties=properties)[0] #* properties["unitless_density"]
+            self.pressure[i] = pressure_over_rho(positions[i,:].reshape((1,*positions.shape[1:])), properties=properties)[0] * properties["unitless_density"]
         
-        if type(box_size) in (int, float):
-            self.box_size = np.repeat(box_size, dimension)
+        if type(properties["box_size"]) in (int, float):
+            self.box_size = np.repeat(properties["box_size"], self.dimension)
         else:
-            assert len(box_size) == dimension
-            self.box_size = box_size
+            assert len(properties["box_size"]) == self.dimension
+            self.box_size = properties["box_size"]
         
         self.fig = plt.figure()
         self.gs = gridspec.GridSpec(3,6)
@@ -67,13 +62,20 @@ class Animation:
             self.ax.set_aspect('equal')
             self.scats = [self.ax.scatter(self.positions[0,j,0],self.positions[0,j,1], s=2) for j,pos in enumerate(self.positions[0,::,0])]
             self.time_text = self.ax.text(.02, .02, '', transform=self.ax.transAxes, color="black")
+            self.config_text = self.ax.text(.02, .95, '', transform=self.ax.transAxes, color="black")
         elif self.dimension == 3:
             self.ax = self.fig.add_subplot(self.gs[:,:-2], projection='3d')
             self.ax.auto_scale_xyz([0, self.box_size[0]],[0, self.box_size[1]],[0, 5*self.box_size[2]])
             self.scats = [self.ax.scatter(self.positions[0,j,0],self.positions[0,j,1],self.positions[0,j,2], s=2) for j,pos in enumerate(self.positions[0,::,0])]
             self.time_text = self.ax.text2D(.02, .02, '', transform=self.ax.transAxes, color="black")
+            self.config_text = self.ax.text2D(.02, .95, '', transform=self.ax.transAxes, color="black")
             self.ax.set_zlim3d([0, self.box_size[2]])
             self.ax.set_zlabel('Z')
+        
+        self.time_per_frame = properties["time_step"]* np.sqrt((properties["sigma"]**2) * properties["particle_mass"] /(properties["epsilon_over_kb"] * properties["kb"]))
+        self.config_text.set_text("Temperature = {temp:.1f} K\n".format(temp = properties["unitless_temperature"]*properties["epsilon_over_kb"])
+                                  +
+                                  r"Density = {density:.1f} kg m$^{{-3}}$".format(density = properties["unitless_density"]*properties["particle_mass"]/(properties["sigma"]**3)))
         
         self.ax.set_xlim([0, self.box_size[0]])
         self.ax.set_ylim([0, self.box_size[1]])
@@ -93,7 +95,7 @@ class Animation:
         self.ax_energy.legend()
         
         self.ax_pressure   = self.fig.add_subplot(self.gs[2,-2:])
-        self.ax_pressure.set_title('Pressure over density')
+        self.ax_pressure.set_title('Pressure')
         self.ax_pressure.set_xlim(0,len(self.pressure))
         self.ax_pressure.set_ylim((np.amin(self.pressure)),(np.amax(self.pressure)))
         self.line_pressure, = self.ax_pressure.plot([],[], label="pressure")
@@ -101,9 +103,9 @@ class Animation:
 
     def run(self):
         if self.dimension == 2:
-            self.anim = animation.FuncAnimation(self.fig, self.update2d)
+            self.anim = animation.FuncAnimation(self.fig, self.update2d, frames = np.arange(0, np.shape(self.tot_energy)[0],step=self.frameskip), repeat=False)
         elif self.dimension == 3:
-            self.anim = animation.FuncAnimation(self.fig, self.update3d,frames = np.arange(0, np.shape(self.tot_energy)[0],step=self.frameskip), repeat=False)
+            self.anim = animation.FuncAnimation(self.fig, self.update3d, frames = np.arange(0, np.shape(self.tot_energy)[0],step=self.frameskip), repeat=False)
         self.gs.tight_layout(self.fig)
         plt.show()
 
@@ -119,7 +121,7 @@ class Animation:
                 self.scat.set_sizes(np.linspace(0,4,num=self.tail_length*self.frameskip, dtype=float))
         self.update_energy(self.frame_index)
         self.update_pressure(self.frame_index)
-        self.time_text.set_text('frame = %.1f' % self.frame_index)
+        self.time_text.set_text('frame = {frame:.1f}\n time = {time:.1f}'.format(frame = self.frame_index, time = self.frame_index*self.time_per_frame))
 
     
     def update3d(self, i):
@@ -133,7 +135,7 @@ class Animation:
                 self.scat.set_sizes(np.linspace(0,4,num=self.tail_length*self.frameskip, dtype=float))
         self.update_energy(self.frame_index)
         self.update_pressure(self.frame_index)
-        self.time_text.set_text('frame = %.1f' % self.frame_index)
+        self.time_text.set_text('frame = {frame:.1f}\n time = {time:.3f}e-12 s'.format(frame = self.frame_index, time = self.frame_index*self.time_per_frame*(1e12)))
 
     def update_energy(self, i):
         self.line_kin_energy.set_data(np.arange(i), self.kin_energy[:i])
