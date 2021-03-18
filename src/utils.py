@@ -35,9 +35,9 @@ def pressure_fpaths(paths):
 		# Calculate the unitless pressure
 		pressure[i,::] = find_pressure(positions, properties)
 
-	print(f"Pressure: {np.mean(pressure[::,0])} +/- {sum_squared(pressure[::,1])}")
+	print(f"Pressure: {np.mean(pressure[::,0])} +/- {np.std(pressure[::,0], ddof=1)}")
 
-	return np.mean(pressure[::,0]), sum_squared(pressure[::,1])
+	return np.mean(pressure[::,0]), np.std(pressure[::,0], ddof=1)
 
 def cleanup_paths(paths):
 	for path in paths:

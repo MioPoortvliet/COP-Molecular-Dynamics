@@ -2,11 +2,13 @@ import matplotlib.pyplot as plt
 from src.IO_utils import load_and_concat, load_json
 import numpy as np
 
-def plot_positions(fpath) -> None:
+def plot_positions(fpath, ticks=5) -> None:
 	positions = load_and_concat(fpath, "positions")
 	velocities = load_and_concat(fpath, "velocities")
+	properties = load_json(fpath)
 	plt.plot(positions[::,::,0], '.')
-	plt.xlabel("Time index")
+	plt.xlabel("Time $t$")
+	plt.xticks(np.linspace(0, velocities.shape[0], ticks), [f"{x:,.2e}" for x in np.linspace(0, properties["end_time"], ticks)])
 	plt.ylabel("Position")
 	plt.show()
 
@@ -23,7 +25,7 @@ def plot_positions(fpath) -> None:
 	"""
 
 
-def plot_energies(path):
+def plot_energies(path, ticks=5):
 	properties = load_json(path)
 
 	velocities = load_and_concat(path, "velocities")
@@ -36,6 +38,7 @@ def plot_energies(path):
 	plt.plot(np.sum(potential_energy, axis=-1)+np.sum(kinetic_energy, axis=-1), '.', label="total")
 
 	plt.xlabel("Time $t$")
+	plt.xticks(np.linspace(0, velocities.shape[0], ticks), [f"{x:,.2e}" for x in np.linspace(0, properties["end_time"], ticks)])
 	plt.ylabel("Energy [J]")
 	plt.legend()
 	plt.show()
@@ -43,7 +46,7 @@ def plot_energies(path):
 
 def plot_correlation_function(correlation_function, distance, properties):
 	plt.bar(distance, correlation_function, width=distance[1]-distance[0])
-	plt.xlabel("Unitless distance from molecule $r$ [-]")
+	plt.xlabel("Distance from molecule $r$ [-]")
 	plt.ylabel("Correlation function $g(r)$ [-]")
 	plt.title(f'{properties["particles"]} particles, {properties["total_steps"]} steps, $\\rho={properties["unitless_density"]}$, $T={properties["unitless_temperature"]}$')
 	plt.show()

@@ -144,6 +144,7 @@ class Simulation():
 		header["particles"] = int(self.particles)
 		header["dimension"] = int(self.dimension)
 		header["end_time_diensionless"] = float(self.end_time)
+		header["end_time"] = self.end_time * np.sqrt(self.particle_mass * self.sigma ** 2 / (self.epsilon_over_kb * self.kb))
 		header["time_step"] = float(self.time_step)
 		header["steps_between_writing"] = int(self.steps_between_writing)
 		header["total_steps"] = int(self.max_timesteps)
